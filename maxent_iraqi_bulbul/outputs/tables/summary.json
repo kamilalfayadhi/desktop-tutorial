@@ -1,110 +1,110 @@
 {
   "species": "Pycnonotus leucotis",
-  "occurrence_source": "GBIF occurrence API",
+  "occurrence_source": "user file occurrences.csv",
   "cleaning_steps": {
-    "input": 7607,
-    "valid_coordinates": 7607,
-    "inside_study_area": 7607,
-    "year_>=_1970": 7603,
-    "uncertainty_<=_10000m": 7598,
-    "drop_fossil_and_captive": 7598,
-    "unique_coordinates": 1187,
-    "on_valid_climate_cells": 1185,
-    "one_per_raster_cell": 422,
-    "thinned_5km": 287
+    "input": 687,
+    "valid_coordinates": 684,
+    "inside_study_area": 684,
+    "year_>=_1970": 681,
+    "uncertainty_<=_10000m": 678,
+    "drop_fossil_and_captive": 678,
+    "unique_coordinates": 170,
+    "on_valid_climate_cells": 170,
+    "one_per_raster_cell": 102,
+    "thinned_5km": 78
   },
-  "n_presences": 287,
+  "n_presences": 78,
   "n_background": 10000,
   "variables": [
     "bio_1",
+    "bio_4",
     "bio_7",
     "bio_12",
-    "bio_14",
     "bio_15"
   ],
   "removed_variables": [
     {
-      "variable": "bio_5",
-      "reason": "VIF = 16660941827993.2"
+      "variable": "bio_6",
+      "reason": "VIF = 18688322016043.2"
     },
     {
       "variable": "bio_10",
-      "reason": "VIF = 3997.5"
+      "reason": "VIF = 4857.0"
     },
     {
       "variable": "bio_11",
-      "reason": "VIF = 2374.7"
+      "reason": "VIF = 3365.2"
     },
     {
       "variable": "bio_9",
-      "reason": "VIF = 754.3"
+      "reason": "VIF = 1090.0"
     },
     {
       "variable": "bio_2",
-      "reason": "VIF = 614.3"
+      "reason": "VIF = 1009.9"
     },
     {
       "variable": "bio_16",
-      "reason": "VIF = 496.9"
+      "reason": "VIF = 569.7"
     },
     {
-      "variable": "bio_6",
-      "reason": "VIF = 210.8"
-    },
-    {
-      "variable": "bio_13",
-      "reason": "VIF = 88.0"
+      "variable": "bio_5",
+      "reason": "VIF = 280.9"
     },
     {
       "variable": "bio_19",
-      "reason": "VIF = 72.5"
+      "reason": "VIF = 116.2"
+    },
+    {
+      "variable": "bio_13",
+      "reason": "VIF = 72.6"
     },
     {
       "variable": "bio_17",
-      "reason": "VIF = 52.4"
-    },
-    {
-      "variable": "bio_4",
-      "reason": "VIF = 22.6"
-    },
-    {
-      "variable": "bio_18",
-      "reason": "VIF = 13.3"
-    },
-    {
-      "variable": "bio_8",
-      "reason": "|r| = 0.82 with bio_1"
+      "reason": "VIF = 52.8"
     },
     {
       "variable": "bio_3",
-      "reason": "|r| = 0.77 with bio_12"
+      "reason": "VIF = 18.3"
+    },
+    {
+      "variable": "bio_18",
+      "reason": "VIF = 11.0"
+    },
+    {
+      "variable": "bio_8",
+      "reason": "|r| = 0.87 with bio_1"
+    },
+    {
+      "variable": "bio_14",
+      "reason": "|r| = 0.71 with bio_1"
     }
   ],
   "selected_model": {
-    "features": "linear",
-    "regularization_multiplier": 3.0
+    "features": "linear,quadratic,hinge,product",
+    "regularization_multiplier": 1.0
   },
   "metrics": {
-    "training_auc": 0.815120731707317,
-    "max_tss": 0.4946954703832752,
-    "continuous_boyce_index": 0.9755154338963308,
-    "cv_test_auc": 0.6705968105082443,
-    "cv_test_auc_sd": 0.18990645794205063,
-    "cv_auc_diff": 0.14209593567794984,
-    "cv_omission_rate_10pct": 0.09404342723004695
+    "training_auc": 0.9012698717948718,
+    "max_tss": 0.6579512820512821,
+    "continuous_boyce_index": 0.9528069470572026,
+    "cv_test_auc": 0.7947744336012452,
+    "cv_test_auc_sd": 0.09428023990662328,
+    "cv_auc_diff": 0.11664538604130606,
+    "cv_omission_rate_10pct": 0.2513157894736842
   },
   "thresholds": {
-    "max_tss (max sensitivity + specificity)": 0.5686477740159975,
-    "10th_percentile_training_presence": 0.1946777822228519,
-    "minimum_training_presence": 0.007247144830023866
+    "max_tss (max sensitivity + specificity)": 0.5225766803903726,
+    "10th_percentile_training_presence": 0.25339308135469985,
+    "minimum_training_presence": 0.08284928725439056
   },
-  "suitable_area_km2": 233211.85520031542,
+  "suitable_area_km2": 102945.1306830029,
   "future": null,
   "variable_importance_pct": {
-    "bio_1": 62.74,
-    "bio_15": 18.09,
-    "bio_12": 18.05,
-    "bio_7": 0.68,
-    "bio_14": 0.44
+    "bio_15": 39.33,
+    "bio_12": 25.4,
+    "bio_4": 15.54,
+    "bio_1": 12.65,
+    "bio_7": 7.08
   }
 }
