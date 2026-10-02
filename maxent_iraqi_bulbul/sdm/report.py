@@ -93,13 +93,23 @@ def build(out: Path, ctx: dict) -> Path:
 
     future_html = ""
     if ctx.get("future"):
-        f = ctx["future"]
+        fut = ctx["future"]
+        table = pd.DataFrame({
+            "Scenario": [f["label"] for f in fut],
+            "Suitable area (km²)": [round(f["suitable_area_km2"]) for f in fut],
+            "Change vs current (%)": [f["area_change_pct"] for f in fut],
+            "Novel climate, MESS < 0 (% of cells)": [f["novel_climate_pct"] for f in fut],
+        })
+        sections = "".join(
+            f"<h3>{html.escape(f['label'])}</h3>"
+            + "".join(_img(fig / f"{kind}_{f['tag']}.png") for kind in ("suitability", "change", "mess"))
+            for f in fut)
         future_html = f"""
-<h2>7. Future projection – {html.escape(f['label'])}</h2>
-<p>Suitable area changes from <b>{ctx['suitable_area_km2']:,.0f} km²</b> today to
-<b>{f['suitable_area_km2']:,.0f} km²</b> ({f['area_change_pct']:+.1f}%) at the max-TSS threshold.
-Areas with negative MESS are outside the range of current training conditions; predictions there are extrapolations.</p>
-{_img(fig / 'suitability_future.png')}{_img(fig / 'suitability_change.png')}{_img(fig / 'mess_future.png')}"""
+<h2>7. Future projections</h2>
+<p>Current suitable area: <b>{ctx['suitable_area_km2']:,.0f} km²</b> (max-TSS threshold, applied unchanged to every scenario).
+Areas with negative MESS have climates outside the range of current training conditions; predictions there are extrapolations.</p>
+{_table(table, floatfmt="{:+.1f}")}
+{sections}"""
 
     src = cfg["environment"]
     env_desc = (f"WorldClim v2.1 bioclimatic variables (1970–2000), {src['resolution']} resolution"

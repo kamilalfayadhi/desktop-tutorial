@@ -52,8 +52,9 @@ model:
 future:
   # Optional projection to future climate (WorldClim 2.1 CMIP6, auto-downloaded).
   enabled: true
-  gcm: "MPI-ESM1-2-HR"
-  ssp: "585"                   # 126, 245, 370 or 585
-  period: "2041-2060"          # 2021-2040, 2041-2060, 2061-2080, 2081-2100
+  # Every combination of the listed GCMs, SSPs and periods is projected.
+  gcms: ["MPI-ESM1-2-HR"]
+  ssps: ["245", "585"]         # 126, 245, 370, 585
+  periods: ["2041-2060", "2061-2080"]  # 2021-2040, 2041-2060, 2061-2080, 2081-2100
 
 output_dir: "outputs"

@@ -107,10 +107,23 @@ def load_layers(cfg: dict, cache_dir: Path) -> tuple[dict[str, np.ndarray], dict
     return layers, template
 
 
-def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: list[str]) -> dict[str, np.ndarray]:
+def future_scenarios(fut_cfg: dict) -> list[dict]:
+    """All GCM x SSP x period combinations from the `future` config (scalars or lists accepted)."""
+    def as_list(*keys):
+        for k in keys:
+            if fut_cfg.get(k) is not None:
+                v = fut_cfg[k]
+                return [str(x) for x in (v if isinstance(v, list) else [v])]
+        return []
+    return [{"gcm": g, "ssp": s, "period": p}
+            for g in as_list("gcms", "gcm") for s in as_list("ssps", "ssp") for p in as_list("periods", "period")]
+
+
+def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: list[str],
+                       scenario: dict) -> dict[str, np.ndarray]:
     """Download a WorldClim CMIP6 multi-band bioclim GeoTIFF and warp it onto the current grid."""
-    fut, res = cfg["future"], cfg["environment"]["resolution"]
-    url = WORLDCLIM_FUTURE.format(res=res, gcm=fut["gcm"], ssp=fut["ssp"], period=fut["period"])
+    res = cfg["environment"]["resolution"]
+    url = WORLDCLIM_FUTURE.format(res=res, **scenario)
     path = _download(url, cache_dir / Path(url).name)
     out = {}
     with rasterio.open(path) as src, WarpedVRT(src, crs=template["crs"], transform=template["transform"],

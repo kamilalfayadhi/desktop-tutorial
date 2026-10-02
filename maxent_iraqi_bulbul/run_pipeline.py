@@ -183,28 +183,35 @@ def main(argv=None):
                      f"{name} – suitable habitat (max-TSS threshold)", thr, boundaries)
     log.info("    suitable area: %.0f km²", suitable_km2)
 
-    future = None
+    future = []
     if cfg.get("future", {}).get("enabled"):
-        f = cfg["future"]
-        label = f"{f['gcm']} SSP{f['ssp']} {f['period']}"
-        log.info("    future projection: %s", label)
-        fut_layers = env.load_future_layers(cfg, cache, template, variables)
-        fut = modeling.predict_grid(model, fut_layers, variables)
-        fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
-        mess = modeling.mess(x_bg, fut_layers, variables)
-        env.write_raster(out / "rasters" / "suitability_future.tif", fut, template)
-        env.write_raster(out / "rasters" / "binary_future_maxTSS.tif", fut_bin, template)
-        env.write_raster(out / "rasters" / "mess_future.tif", mess, template)
-        plots.suitability_map(out / "figures" / "suitability_future.png", fut, template, None,
-                              f"{name} – suitability {label}", boundaries)
-        plots.change_map(out / "figures" / "suitability_change.png", fut - current, template,
-                         f"Change in suitability, {label}")
-        plots.change_map(out / "figures" / "mess_future.png", np.clip(mess, -100, 100), template,
-                         "MESS (negative = novel climate / extrapolation)")
-        fut_km2 = float(np.nansum(area * (fut_bin == 1)))
-        future = {"label": label, "suitable_area_km2": fut_km2,
-                  "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan")}
-        log.info("    future suitable area: %.0f km² (%+.1f%%)", fut_km2, future["area_change_pct"])
+        for sc in env.future_scenarios(cfg["future"]):
+            label = f"{sc['gcm']} SSP{sc['ssp']} {sc['period']}"
+            tag = f"{sc['gcm']}_ssp{sc['ssp']}_{sc['period']}"
+            log.info("    future projection: %s", label)
+            fut_layers = env.load_future_layers(cfg, cache, template, variables, sc)
+            fut = modeling.predict_grid(model, fut_layers, variables)
+            fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
+            mess = modeling.mess(x_bg, fut_layers, variables)
+            env.write_raster(out / "rasters" / f"suitability_{tag}.tif", fut, template)
+            env.write_raster(out / "rasters" / f"binary_maxTSS_{tag}.tif", fut_bin, template)
+            env.write_raster(out / "rasters" / f"mess_{tag}.tif", mess, template)
+            plots.suitability_map(out / "figures" / f"suitability_{tag}.png", fut, template, None,
+                                  f"{name} – suitability {label}", boundaries)
+            plots.change_map(out / "figures" / f"change_{tag}.png", fut - current, template,
+                             f"Change in suitability, {label}")
+            plots.change_map(out / "figures" / f"mess_{tag}.png", np.clip(mess, -100, 100), template,
+                             f"MESS {label} (negative = novel climate)")
+            fut_km2 = float(np.nansum(area * (fut_bin == 1)))
+            valid = ~np.isnan(mess)
+            future.append({
+                "label": label, "tag": tag, **sc, "suitable_area_km2": fut_km2,
+                "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan"),
+                "novel_climate_pct": float(100 * np.mean(mess[valid] < 0)) if valid.any() else float("nan"),
+            })
+            log.info("    suitable area: %.0f km² (%+.1f%%), novel climate on %.1f%% of cells",
+                     fut_km2, future[-1]["area_change_pct"], future[-1]["novel_climate_pct"])
+        pd.DataFrame(future).drop(columns="tag").to_csv(out / "tables" / "future_scenarios.csv", index=False)
 
     # 8. Report ---------------------------------------------------------------------------
     log.info("STEP 8/8  Report")
