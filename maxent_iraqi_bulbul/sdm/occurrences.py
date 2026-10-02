@@ -1,6 +1,8 @@
 """Load, download (GBIF), clean and spatially thin occurrence records."""
 from __future__ import annotations
 
+import csv
+import io
 import logging
 from pathlib import Path
 
@@ -24,16 +26,33 @@ def _find_column(columns, candidates):
     return None
 
 
+def _read_resaved_gbif_tsv(path: Path) -> pd.DataFrame:
+    """Recover a tab-separated GBIF export that a spreadsheet re-saved as CSV.
+
+    Such files wrap each tab-separated line in quotes and split it wherever the text had a comma
+    (e.g. "Pycnonotus leucotis (Gould"," 1836)"), padding rows with empty fields. Re-joining the
+    comma-split pieces restores the original tab-separated line.
+    """
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        lines = [",".join(field for field in row if field != "") for row in csv.reader(f)]
+    log.info("Recovered %s as a re-saved tab-separated (GBIF) file", path.name)
+    return pd.read_csv(io.StringIO("\n".join(lines)), sep="\t", dtype=str)
+
+
 def read_occurrence_file(path: Path) -> pd.DataFrame:
     """Read a CSV/TSV/XLSX file and return it with standard `lon`/`lat` columns."""
     suffix = path.suffix.lower()
     if suffix in (".xlsx", ".xls"):
         df = pd.read_excel(path)
     else:
-        df = pd.read_csv(path, sep=None, engine="python")
+        df = pd.read_csv(path, sep=None, engine="python", dtype=str)
 
     lon_col = _find_column(df.columns, LON_NAMES)
     lat_col = _find_column(df.columns, LAT_NAMES)
+    if (lon_col is None or lat_col is None) and suffix not in (".xlsx", ".xls"):
+        df = _read_resaved_gbif_tsv(path)
+        lon_col = _find_column(df.columns, LON_NAMES)
+        lat_col = _find_column(df.columns, LAT_NAMES)
     if lon_col is None or lat_col is None:
         raise ValueError(
             f"Could not find longitude/latitude columns in {path}. "
