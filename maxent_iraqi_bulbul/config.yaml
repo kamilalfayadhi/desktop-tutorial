@@ -21,7 +21,7 @@ occurrences:
   thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
 
 study_area:
-  # Area MAPPED and reported, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
+  # Area MAPPED, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
   bbox: [37.5, 28.5, 49.5, 38.0]
   # Area the model is TRAINED on. Default: the western part of the white-eared bulbul's range (SE Turkey and
   # the Levant, Iraq, Iran, Arabia and the Gulf, Afghanistan and western Pakistan). It includes climates hotter
@@ -29,7 +29,12 @@ study_area:
   # monsoon climate dominated a whole-range model and fitted Iraq poorly ([34, 20, 78, 40] = whole range).
   # Maps and areas are still reported for `bbox`. null = train on `bbox` only.
   training_bbox: [34.0, 20.0, 64.0, 40.0]
-  # Optional country/province outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
+  # Country whose border and provinces are drawn on every map (ISO3 code, Natural Earth 1:10m outlines).
+  country: "IRQ"
+  clip_to_country: true        # maps, rasters and suitable areas cover only the country (null country = whole bbox)
+  show_provinces: true         # draw governorate boundaries
+  show_country_borders: true   # draw neighbouring countries' borders
+  # Optional extra outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
   boundaries_file: null
 
 environment:

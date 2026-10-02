@@ -91,11 +91,13 @@ def build(out: Path, ctx: dict) -> Path:
     metrics_table = pd.DataFrame([(METRIC_LABELS.get(k, k), float(v)) for k, v in m.items()], columns=["Metric", "Value"])
     thresholds = pd.DataFrame(list(ctx["thresholds"].items()), columns=["Threshold rule", "Cloglog value"])
 
+    mapped = (html.escape(ctx["country_name"]) + " (clipped to the national border)" if ctx.get("country_name")
+              else f"the area {cfg['study_area']['bbox']}")
     range_html = ""
     if (fig / "suitability_range.png").exists() and list(ctx["train_bbox"]) != list(cfg["study_area"]["bbox"]):
         range_html = f"""<p>The model was trained across the species' range ({ctx['train_bbox']}) so that it learns the
 full climatic niche, including conditions hotter or drier than in the mapped area. The range-wide prediction is shown
-first; all maps, areas and future projections below are for the mapped area {cfg['study_area']['bbox']}.</p>
+first; all maps, areas and future projections below are for {mapped}.</p>
 {_img(fig / 'suitability_range.png')}"""
 
     future_html = ""
@@ -129,7 +131,7 @@ and include a map of how many models predict suitable habitat in each cell.</p>
 <title>MaxEnt – {html.escape(cfg['species']['name'])}</title><style>{CSS}</style></head><body>
 <h1>Habitat suitability model – <i>{html.escape(cfg['species']['name'])}</i></h1>
 <p class="sub">MaxEnt species distribution model · generated {datetime.now():%Y-%m-%d %H:%M} ·
-mapped area {cfg['study_area']['bbox']} · training area {ctx['train_bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
+mapped area: {mapped} · training area {ctx['train_bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
 <div class="tiles">{tiles_html}</div>
 
 <h2>1. Occurrence data</h2>
@@ -177,6 +179,7 @@ honest measure of transferability. Boyce index ranges −1 to 1; positive values
 <p class="note">GeoTIFFs for GIS are in <code>rasters/</code>; tables (cleaned occurrences, background, tuning results,
 importance, response curves, metrics) in <code>tables/</code>; the fitted model in <code>model/</code>.</p>
 <h2>Citation / caveats</h2>
+<p class="note">Country and governorate boundaries: Natural Earth 1:10m Admin 0 and Admin 1 (public domain).</p>
 <p class="note">Non-climate layers, when used: ESA WorldCover 2021 v200 (Zanaga et al. 2022), land-cover fractions per cell;
 Natural Earth 1:10m river centre-lines, which include the Tigris, Euphrates and Shatt al-Arab but not smaller rivers such as
 the Great and Little Zab, Diyala or Karun. Both are held at present-day values in future projections.</p>

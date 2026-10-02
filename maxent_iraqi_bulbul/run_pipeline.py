@@ -23,6 +23,7 @@ import rasterio
 import yaml
 
 from sdm import environment as env
+from sdm import boundaries as bnd
 from sdm import extra_layers, modeling, occurrences, plots, report
 
 HERE = Path(__file__).resolve().parent
@@ -53,6 +54,8 @@ def main(argv=None):
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     cfg_dir = Path(args.config).resolve().parent
+    if cfg["study_area"].get("boundaries_file"):
+        cfg["study_area"]["boundaries_file"] = str(resolve(cfg["study_area"]["boundaries_file"], cfg_dir))
     if cfg["environment"].get("local_dir"):
         cfg["environment"]["local_dir"] = str(resolve(cfg["environment"]["local_dir"], cfg_dir))
     if args.occurrences:
@@ -173,10 +176,11 @@ def main(argv=None):
 
     # 7. Prediction maps ------------------------------------------------------------------
     log.info("STEP 7/8  Prediction maps")
-    boundaries = None
-    if cfg["study_area"].get("boundaries_file"):
-        import geopandas as gpd
-        boundaries = gpd.read_file(resolve(cfg["study_area"]["boundaries_file"], cfg_dir)).to_crs("EPSG:4326")
+    boundaries = bnd.load(cfg, cache, bbox)  # outlines for the study-area maps
+    range_boundaries = {k: v for k, v in bnd.load(cfg, cache, train_bbox).items() if k != "provinces"}
+    country = boundaries.get("country")
+    clip_to_country = country is not None and cfg["study_area"].get("clip_to_country", True)
+    where = f" in {country['NAME'].iloc[0]}" if clip_to_country else ""
     thr_key = "max_tss (max sensitivity + specificity)"
     thr = thresholds[thr_key]
     name = cfg["species"]["name"]
@@ -185,12 +189,21 @@ def main(argv=None):
         # range-wide map from the training extent, then everything below is for the study area only
         env.write_raster(out / "rasters" / "suitability_training_range.tif", current_full, template)
         plots.suitability_map(out / "figures" / "suitability_range.png", current_full, template, pres,
-                              f"{name} – habitat suitability, training range (current)", boundaries)
+                              f"{name} – habitat suitability, training range (current)", range_boundaries)
     train_template = template
     win, template = env.subgrid(train_template, bbox)
-    current = current_full[win]
+    if clip_to_country:
+        inside = bnd.country_mask(template, country)  # results are reported for the country only
+        clip = lambda a: np.where(inside, a, np.nan)  # noqa: E731
+    else:
+        clip = lambda a: a  # noqa: E731
+    current = clip(current_full[win])
     area = cell_area_km2(template)
     in_bbox = pres["lon"].between(bbox[0], bbox[2]) & pres["lat"].between(bbox[1], bbox[3])
+    if clip_to_country:
+        import geopandas as gpd
+        pts = gpd.GeoSeries(gpd.points_from_xy(pres["lon"], pres["lat"]), crs="EPSG:4326")
+        in_bbox &= pts.within(country.geometry.union_all()).to_numpy()
     pres_map = pres[in_bbox]
     binary = np.where(np.isnan(current), np.nan, (current >= thr).astype("float32"))
     suitable_km2 = float(np.nansum(area * (binary == 1)))
@@ -200,32 +213,35 @@ def main(argv=None):
     env.write_raster(out / "rasters" / "binary_current_p10.tif",
                      np.where(np.isnan(current), np.nan, (current >= p10).astype("float32")), template)
     plots.occurrence_map(out / "figures" / "occurrences.png", cleaned, pres, train_template,
-                         layers[all_vars[0]], bg)
+                         layers[all_vars[0]], bg, range_boundaries)
     plots.suitability_map(out / "figures" / "suitability_current.png", current, template, pres_map,
-                          f"{name} – habitat suitability (current)", boundaries)
+                          f"{name} – habitat suitability{where} (current)", boundaries)
     plots.binary_map(out / "figures" / "binary_current.png", binary, template, pres_map,
-                     f"{name} – suitable habitat (max-TSS threshold)", thr, boundaries)
+                     f"{name} – suitable habitat{where} (max-TSS threshold)", thr, boundaries)
     log.info("    suitable area: %.0f km²", suitable_km2)
 
     future = []
 
     def save_projection(label, tag, fut, mess, info, agreement=None, n_models=None):
         """Write rasters/figures for one projection and record its summary row."""
+        fut, mess = clip(fut), clip(mess)
+        agreement = None if agreement is None else clip(agreement)
         fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
         env.write_raster(out / "rasters" / f"suitability_{tag}.tif", fut, template)
         env.write_raster(out / "rasters" / f"binary_maxTSS_{tag}.tif", fut_bin, template)
         env.write_raster(out / "rasters" / f"mess_{tag}.tif", mess, template)
         plots.suitability_map(out / "figures" / f"suitability_{tag}.png", fut, template, None,
-                              f"{name} – suitability {label}", boundaries)
+                              f"{name} – suitability{where}, {label}", boundaries)
         plots.change_map(out / "figures" / f"change_{tag}.png", fut - current, template,
-                         f"Change in suitability, {label}")
+                         f"Change in suitability{where}, {label}", boundaries=boundaries)
         plots.change_map(out / "figures" / f"mess_{tag}.png", np.clip(mess, -100, 100), template,
-                         f"MESS {label} (negative = novel climate)", label="MESS similarity")
+                         f"MESS{where}, {label} (negative = novel climate)", label="MESS similarity",
+                         boundaries=boundaries)
         figures = ["suitability", "change", "mess"]
         if agreement is not None:
             env.write_raster(out / "rasters" / f"agreement_{tag}.tif", agreement, template)
             plots.agreement_map(out / "figures" / f"agreement_{tag}.png", agreement, n_models, template, pres_map,
-                                f"Model agreement on suitable habitat, SSP{info['ssp']} {info['period']}")
+                                f"Model agreement{where}, SSP{info['ssp']} {info['period']}", boundaries)
             figures.append("agreement")
         fut_km2 = float(np.nansum(area * (fut_bin == 1)))
         valid = ~np.isnan(mess)
@@ -286,6 +302,7 @@ def main(argv=None):
         "n_background": len(bg), "cleaning_steps": steps, "variables": variables, "removed": removed,
         "tuning": tuning, "importance": importance, "suitable_area_km2": suitable_km2, "future": future,
         "occ_source": occ_source, "train_bbox": train_bbox,
+        "country_name": country["NAME"].iloc[0] if clip_to_country else None,
     })
     log.info("Done. Report: %s", path)
     return summary
