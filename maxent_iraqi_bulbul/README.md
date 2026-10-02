@@ -40,6 +40,7 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 | `occurrences.gbif_supplement` | true | Add GBIF records from the training area to your file (duplicates removed) |
 | `environment.resolution` | 2.5m (~4.5 km) | WorldClim resolution: 10m, 5m, 2.5m, 30s |
 | `environment.keep_variables` | bio_1, bio_12 | Never removed by the collinearity filter |
+| `environment.extra_layers` | rivers + tree/cropland/built | Non-climate predictors: distance to major rivers (Natural Earth) and land-cover fractions (ESA WorldCover 2021), held constant in future projections |
 | `background.buffer_km` | 300 | Background sampled within this distance of records (accessible area) |
 | `model.feature_classes` / `regularization_multipliers` | 5 × 6 grid | Candidate models compared by cross-validation |
 | `model.selection_metric` | auc_then_or10 | Among settings within 0.005 of the best CV AUC, pick the lowest omission rate, then the strongest regularization |

@@ -33,7 +33,8 @@ BIOCLIM_NAMES = {
 
 
 def describe(var: str) -> str:
-    return BIOCLIM_NAMES.get(var, var)
+    from .extra_layers import DESCRIPTIONS
+    return BIOCLIM_NAMES.get(var) or DESCRIPTIONS.get(var, var)
 
 
 def _download(url: str, dest: Path) -> Path:

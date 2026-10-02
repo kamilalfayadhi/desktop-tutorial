@@ -177,6 +177,9 @@ honest measure of transferability. Boyce index ranges −1 to 1; positive values
 <p class="note">GeoTIFFs for GIS are in <code>rasters/</code>; tables (cleaned occurrences, background, tuning results,
 importance, response curves, metrics) in <code>tables/</code>; the fitted model in <code>model/</code>.</p>
 <h2>Citation / caveats</h2>
+<p class="note">Non-climate layers, when used: ESA WorldCover 2021 v200 (Zanaga et al. 2022), land-cover fractions per cell;
+Natural Earth 1:10m river centre-lines, which include the Tigris, Euphrates and Shatt al-Arab but not smaller rivers such as
+the Great and Little Zab, Diyala or Karun. Both are held at present-day values in future projections.</p>
 <p class="note">Fick &amp; Hijmans (2017) WorldClim 2. Phillips et al. (2006, 2017) MaxEnt; model fitted with the
 <code>elapid</code> Python implementation (Anderson 2023). If occurrences came from GBIF, cite the GBIF records used
 (create a download DOI at gbif.org for publication). Presence-background models estimate relative suitability,

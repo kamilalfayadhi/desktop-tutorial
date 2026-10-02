@@ -23,7 +23,7 @@ import rasterio
 import yaml
 
 from sdm import environment as env
-from sdm import modeling, occurrences, plots, report
+from sdm import extra_layers, modeling, occurrences, plots, report
 
 HERE = Path(__file__).resolve().parent
 log = logging.getLogger("maxent")
@@ -99,6 +99,7 @@ def main(argv=None):
     # 2. Environment ----------------------------------------------------------------------
     log.info("STEP 2/8  Environmental layers")
     layers, template = env.load_layers(cfg, cache, train_bbox)
+    layers.update(extra_layers.load(cfg, template, cache))  # distance to rivers, land cover (static)
     all_vars = list(layers)
     valid_all = ~np.isnan(np.stack([layers[v] for v in all_vars])).any(axis=0)
 
@@ -241,7 +242,10 @@ def main(argv=None):
         for sc in env.future_scenarios(cfg["future"]):
             label = f"{sc['gcm']} SSP{sc['ssp']} {sc['period']}"
             log.info("    future projection: %s", label)
-            fut_layers = env.load_future_layers(cfg, cache, template, variables, sc)
+            fut_layers = env.load_future_layers(cfg, cache, template,
+                                                [v for v in variables if v.startswith("bio_")], sc)
+            # non-climate layers (rivers, land cover) are held at their current values
+            fut_layers.update({v: layers[v][win] for v in variables if not v.startswith("bio_")})
             fut = modeling.predict_grid(model, fut_layers, variables)
             mess = modeling.mess(x_bg, fut_layers, variables)
             save_projection(label, f"{sc['gcm']}_ssp{sc['ssp']}_{sc['period']}", fut, mess, sc)
