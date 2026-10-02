@@ -99,7 +99,7 @@
     "10th_percentile_training_presence": 0.13464777977582326,
     "minimum_training_presence": 0.010088425204739848
   },
-  "suitable_area_km2": 174990.3804951731,
+  "suitable_area_km2": 109691.73491790313,
   "future": [
     {
       "label": "MPI-ESM1-2-HR SSP245 2041-2060",
@@ -112,9 +112,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 227719.78507021157,
-      "area_change_pct": 30.132744683353007,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 140816.082403217,
+      "area_change_pct": 28.37437798627978,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "MPI-ESM1-2-HR SSP245 2061-2080",
@@ -127,9 +127,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 243919.10098413855,
-      "area_change_pct": 39.3900054928258,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 152096.8450427472,
+      "area_change_pct": 38.65843689734823,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "MPI-ESM1-2-HR SSP585 2041-2060",
@@ -142,9 +142,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 227531.84272524863,
-      "area_change_pct": 30.025343153948295,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 144624.36146356678,
+      "area_change_pct": 31.846179269393783,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "MPI-ESM1-2-HR SSP585 2061-2080",
@@ -157,9 +157,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 259962.88375484306,
-      "area_change_pct": 48.55838533479491,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 161658.35314265994,
+      "area_change_pct": 47.37514477608575,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "UKESM1-0-LL SSP245 2041-2060",
@@ -172,9 +172,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 285415.97794240003,
-      "area_change_pct": 63.103810126450284,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 168860.18913153658,
+      "area_change_pct": 53.94066768833318,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "UKESM1-0-LL SSP245 2061-2080",
@@ -187,9 +187,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 319511.0180681122,
-      "area_change_pct": 82.58776120377973,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 180356.31687373843,
+      "area_change_pct": 64.4210632721991,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "UKESM1-0-LL SSP585 2041-2060",
@@ -202,9 +202,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 320198.4582681182,
-      "area_change_pct": 82.98060576932713,
-      "novel_climate_pct": 0.03252586580757078
+      "suitable_area_km2": 184155.3560594577,
+      "area_change_pct": 67.88444106320824,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "UKESM1-0-LL SSP585 2061-2080",
@@ -217,9 +217,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 395991.03157201345,
-      "area_change_pct": 126.29302848046346,
-      "novel_climate_pct": 11.376308778886067
+      "suitable_area_km2": 223855.11655955995,
+      "area_change_pct": 104.07655757026762,
+      "novel_climate_pct": 14.875591198848447
     },
     {
       "label": "Ensemble mean SSP245 2041-2060",
@@ -233,9 +233,9 @@
       "gcm": "ensemble mean",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 259057.19446982897,
-      "area_change_pct": 48.04082015066808,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 157061.77273545484,
+      "area_change_pct": 43.1846919487644,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "Ensemble mean SSP245 2061-2080",
@@ -249,9 +249,9 @@
       "gcm": "ensemble mean",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 285048.38898255076,
-      "area_change_pct": 62.89374774541592,
-      "novel_climate_pct": 0.00774425376370733
+      "suitable_area_km2": 169685.83833410358,
+      "area_change_pct": 54.69336724512744,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "Ensemble mean SSP585 2041-2060",
@@ -265,9 +265,9 @@
       "gcm": "ensemble mean",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 278233.55897595256,
-      "area_change_pct": 58.999345100359555,
-      "novel_climate_pct": 0.03252586580757078
+      "suitable_area_km2": 168847.55037202954,
+      "area_change_pct": 53.929145617398206,
+      "novel_climate_pct": 0.012338062924120914
     },
     {
       "label": "Ensemble mean SSP585 2061-2080",
@@ -281,9 +281,9 @@
       "gcm": "ensemble mean",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 334578.0244351349,
-      "area_change_pct": 91.19795241794095,
-      "novel_climate_pct": 11.376308778886067
+      "suitable_area_km2": 196726.1908914828,
+      "area_change_pct": 79.34458875932549,
+      "novel_climate_pct": 14.875591198848447
     }
   ],
   "variable_importance_pct": {
