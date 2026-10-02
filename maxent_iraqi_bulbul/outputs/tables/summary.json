@@ -25,7 +25,7 @@
   "removed_variables": [
     {
       "variable": "bio_5",
-      "reason": "VIF = 16758650497809.4"
+      "reason": "VIF = 16660941827993.2"
     },
     {
       "variable": "bio_10",

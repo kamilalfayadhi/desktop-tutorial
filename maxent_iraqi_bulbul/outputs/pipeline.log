@@ -1,65 +1,65 @@
-12:16:05  STEP 1/8  Occurrence data
-12:16:05  No occurrence file at /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/occurrences/occurrences.csv - downloading from GBIF
-12:16:06  GBIF taxon: Pycnonotus leucotis (Gould, 1836) (key 2486132)
-12:16:54  Downloaded 7607 GBIF records
-12:16:54  STEP 2/8  Environmental layers
-12:16:54  Downloading https://geodata.ucdavis.edu/climate/worldclim/2_1/base/wc2.1_2.5m_bio.zip (this can take a while)...
-12:17:07  Loaded 19 layers on a 228x288 grid
-12:17:07      input                              7607
-12:17:07      valid_coordinates                  7607
-12:17:07      inside_study_area                  7607
-12:17:07      year_>=_1970                       7603
-12:17:07      uncertainty_<=_10000m              7598
-12:17:07      drop_fossil_and_captive            7598
-12:17:07      unique_coordinates                 1187
-12:17:07      on_valid_climate_cells             1185
-12:17:07      one_per_raster_cell                 422
-12:17:07      thinned_5km                         287
-12:17:07  STEP 3/8  Background points
-12:17:07      10000 background points
-12:17:07  STEP 4/8  Variable selection (collinearity)
-12:17:07      retained: bio_1, bio_7, bio_12, bio_14, bio_15
-12:17:08  STEP 5/8  Model tuning
-12:17:09    linear                           rm=0.5  test AUC=0.670  AUC diff=0.143  OR10=0.091
-12:17:09    linear                           rm=1    test AUC=0.670  AUC diff=0.143  OR10=0.091
-12:17:10    linear                           rm=1.5  test AUC=0.671  AUC diff=0.142  OR10=0.094
-12:17:10    linear                           rm=2    test AUC=0.671  AUC diff=0.142  OR10=0.094
-12:17:11    linear                           rm=3    test AUC=0.671  AUC diff=0.142  OR10=0.094
-12:17:12    linear                           rm=4    test AUC=0.671  AUC diff=0.142  OR10=0.094
-12:17:14    linear,quadratic                 rm=0.5  test AUC=0.661  AUC diff=0.158  OR10=0.087
-12:17:16    linear,quadratic                 rm=1    test AUC=0.669  AUC diff=0.150  OR10=0.084
-12:17:18    linear,quadratic                 rm=1.5  test AUC=0.669  AUC diff=0.149  OR10=0.087
-12:17:19    linear,quadratic                 rm=2    test AUC=0.669  AUC diff=0.150  OR10=0.087
-12:17:20    linear,quadratic                 rm=3    test AUC=0.669  AUC diff=0.150  OR10=0.091
-12:17:22    linear,quadratic                 rm=4    test AUC=0.668  AUC diff=0.150  OR10=0.091
-12:17:27    linear,quadratic,hinge           rm=0.5  test AUC=0.641  AUC diff=0.200  OR10=0.139
-12:17:32    linear,quadratic,hinge           rm=1    test AUC=0.646  AUC diff=0.192  OR10=0.125
-12:17:35    linear,quadratic,hinge           rm=1.5  test AUC=0.647  AUC diff=0.190  OR10=0.115
-12:17:39    linear,quadratic,hinge           rm=2    test AUC=0.645  AUC diff=0.192  OR10=0.108
-12:17:42    linear,quadratic,hinge           rm=3    test AUC=0.643  AUC diff=0.193  OR10=0.108
-12:17:45    linear,quadratic,hinge           rm=4    test AUC=0.642  AUC diff=0.194  OR10=0.108
-12:17:49    linear,quadratic,product         rm=0.5  test AUC=0.621  AUC diff=0.206  OR10=0.153
-12:17:52    linear,quadratic,product         rm=1    test AUC=0.633  AUC diff=0.191  OR10=0.136
-12:17:55    linear,quadratic,product         rm=1.5  test AUC=0.644  AUC diff=0.180  OR10=0.091
-12:17:57    linear,quadratic,product         rm=2    test AUC=0.652  AUC diff=0.170  OR10=0.094
-12:17:59    linear,quadratic,product         rm=3    test AUC=0.659  AUC diff=0.163  OR10=0.091
-12:18:01    linear,quadratic,product         rm=4    test AUC=0.661  AUC diff=0.161  OR10=0.091
-12:18:06    linear,quadratic,hinge,product   rm=0.5  test AUC=0.649  AUC diff=0.196  OR10=0.125
-12:18:10    linear,quadratic,hinge,product   rm=1    test AUC=0.653  AUC diff=0.188  OR10=0.118
-12:18:13    linear,quadratic,hinge,product   rm=1.5  test AUC=0.654  AUC diff=0.185  OR10=0.111
-12:18:17    linear,quadratic,hinge,product   rm=2    test AUC=0.653  AUC diff=0.185  OR10=0.111
-12:18:20    linear,quadratic,hinge,product   rm=3    test AUC=0.653  AUC diff=0.185  OR10=0.111
-12:18:23    linear,quadratic,hinge,product   rm=4    test AUC=0.652  AUC diff=0.185  OR10=0.111
-12:18:23      selected: features=linear rm=3.0 (test AUC 0.671)
-12:18:23  STEP 6/8  Final model and evaluation
-12:18:23      training_auc                 0.815
-12:18:23      max_tss                      0.495
-12:18:23      continuous_boyce_index       0.976
-12:18:23      cv_test_auc                  0.671
-12:18:23      cv_test_auc_sd               0.190
-12:18:23      cv_auc_diff                  0.142
-12:18:23      cv_omission_rate_10pct       0.094
-12:18:24  STEP 7/8  Prediction maps
-12:18:25      suitable area: 233212 km²
-12:18:25  STEP 8/8  Report
-12:18:25  Done. Report: /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/outputs/report.html
+15:59:29  STEP 1/8  Occurrence data
+15:59:29  No occurrence file at /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/occurrences/occurrences.csv - downloading from GBIF
+15:59:29  GBIF taxon: Pycnonotus leucotis (Gould, 1836) (key 2486132)
+16:00:15  Downloaded 7607 GBIF records
+16:00:15  STEP 2/8  Environmental layers
+16:00:15  Downloading https://geodata.ucdavis.edu/climate/worldclim/2_1/base/wc2.1_2.5m_bio.zip (this can take a while)...
+16:00:28  Loaded 19 layers on a 228x288 grid
+16:00:28      input                              7607
+16:00:28      valid_coordinates                  7607
+16:00:28      inside_study_area                  7607
+16:00:28      year_>=_1970                       7603
+16:00:28      uncertainty_<=_10000m              7598
+16:00:28      drop_fossil_and_captive            7598
+16:00:28      unique_coordinates                 1187
+16:00:28      on_valid_climate_cells             1185
+16:00:28      one_per_raster_cell                 422
+16:00:28      thinned_5km                         287
+16:00:28  STEP 3/8  Background points
+16:00:29      10000 background points
+16:00:29  STEP 4/8  Variable selection (collinearity)
+16:00:29      retained: bio_1, bio_7, bio_12, bio_14, bio_15
+16:00:30  STEP 5/8  Model tuning
+16:00:30    linear                           rm=0.5  test AUC=0.670  AUC diff=0.143  OR10=0.091
+16:00:31    linear                           rm=1    test AUC=0.670  AUC diff=0.143  OR10=0.091
+16:00:31    linear                           rm=1.5  test AUC=0.671  AUC diff=0.142  OR10=0.094
+16:00:32    linear                           rm=2    test AUC=0.671  AUC diff=0.142  OR10=0.094
+16:00:32    linear                           rm=3    test AUC=0.671  AUC diff=0.142  OR10=0.094
+16:00:33    linear                           rm=4    test AUC=0.671  AUC diff=0.142  OR10=0.094
+16:00:35    linear,quadratic                 rm=0.5  test AUC=0.661  AUC diff=0.158  OR10=0.087
+16:00:36    linear,quadratic                 rm=1    test AUC=0.669  AUC diff=0.150  OR10=0.084
+16:00:38    linear,quadratic                 rm=1.5  test AUC=0.669  AUC diff=0.149  OR10=0.087
+16:00:39    linear,quadratic                 rm=2    test AUC=0.669  AUC diff=0.150  OR10=0.087
+16:00:40    linear,quadratic                 rm=3    test AUC=0.669  AUC diff=0.150  OR10=0.091
+16:00:41    linear,quadratic                 rm=4    test AUC=0.668  AUC diff=0.150  OR10=0.091
+16:00:46    linear,quadratic,hinge           rm=0.5  test AUC=0.641  AUC diff=0.200  OR10=0.139
+16:00:49    linear,quadratic,hinge           rm=1    test AUC=0.646  AUC diff=0.192  OR10=0.125
+16:00:53    linear,quadratic,hinge           rm=1.5  test AUC=0.647  AUC diff=0.190  OR10=0.115
+16:00:55    linear,quadratic,hinge           rm=2    test AUC=0.645  AUC diff=0.192  OR10=0.108
+16:00:58    linear,quadratic,hinge           rm=3    test AUC=0.643  AUC diff=0.193  OR10=0.108
+16:01:01    linear,quadratic,hinge           rm=4    test AUC=0.642  AUC diff=0.194  OR10=0.108
+16:01:04    linear,quadratic,product         rm=0.5  test AUC=0.621  AUC diff=0.206  OR10=0.153
+16:01:06    linear,quadratic,product         rm=1    test AUC=0.633  AUC diff=0.191  OR10=0.136
+16:01:08    linear,quadratic,product         rm=1.5  test AUC=0.644  AUC diff=0.180  OR10=0.091
+16:01:10    linear,quadratic,product         rm=2    test AUC=0.652  AUC diff=0.170  OR10=0.094
+16:01:12    linear,quadratic,product         rm=3    test AUC=0.659  AUC diff=0.163  OR10=0.091
+16:01:14    linear,quadratic,product         rm=4    test AUC=0.661  AUC diff=0.161  OR10=0.091
+16:01:18    linear,quadratic,hinge,product   rm=0.5  test AUC=0.649  AUC diff=0.196  OR10=0.125
+16:01:21    linear,quadratic,hinge,product   rm=1    test AUC=0.653  AUC diff=0.188  OR10=0.118
+16:01:24    linear,quadratic,hinge,product   rm=1.5  test AUC=0.654  AUC diff=0.185  OR10=0.111
+16:01:27    linear,quadratic,hinge,product   rm=2    test AUC=0.653  AUC diff=0.185  OR10=0.111
+16:01:29    linear,quadratic,hinge,product   rm=3    test AUC=0.653  AUC diff=0.185  OR10=0.111
+16:01:32    linear,quadratic,hinge,product   rm=4    test AUC=0.652  AUC diff=0.185  OR10=0.111
+16:01:32      selected: features=linear rm=3.0 (test AUC 0.671)
+16:01:32  STEP 6/8  Final model and evaluation
+16:01:33      training_auc                 0.815
+16:01:33      max_tss                      0.495
+16:01:33      continuous_boyce_index       0.976
+16:01:33      cv_test_auc                  0.671
+16:01:33      cv_test_auc_sd               0.190
+16:01:33      cv_auc_diff                  0.142
+16:01:33      cv_omission_rate_10pct       0.094
+16:01:33  STEP 7/8  Prediction maps
+16:01:34      suitable area: 233212 km²
+16:01:34  STEP 8/8  Report
+16:01:34  Done. Report: /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/outputs/report.html
