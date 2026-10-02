@@ -82,8 +82,9 @@ def main(argv=None):
         sources.append(user)
     if not have_file or occ_cfg.get("gbif_supplement", False):
         log.info("Downloading GBIF records for the training area %s", train_bbox)
-        gbif = occurrences.download_gbif(cfg["species"]["name"], train_bbox,
-                                         occ_cfg.get("gbif_tile_deg", 1.0), occ_cfg.get("gbif_max_per_tile", 600))
+        gbif = occurrences.cached_gbif(cache, occ_cfg.get("gbif_cache_days", 30), cfg["species"]["name"],
+                                       train_bbox, occ_cfg.get("gbif_tile_deg", 1.0),
+                                       occ_cfg.get("gbif_max_per_tile", 600))
         gbif.to_csv(out / "tables" / "gbif_raw_download.csv", index=False)
         if have_file and "gbifID" in user.columns:  # records already in the user's file
             gbif = gbif[~gbif["gbifID"].astype(str).isin(user["gbifID"].astype(str))]

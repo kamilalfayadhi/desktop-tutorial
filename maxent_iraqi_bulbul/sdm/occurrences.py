@@ -64,18 +64,27 @@ def read_occurrence_file(path: Path) -> pd.DataFrame:
     return df
 
 
-def _gbif_get(url, params, retries=4):
-    """GET a GBIF API endpoint with a short timeout and retries."""
+def _gbif_get(url, params, retries=8, pause=0.3):
+    """GET a GBIF API endpoint politely: short pause per request, honour 429/Retry-After, back off on errors."""
     for attempt in range(retries):
         try:
-            r = requests.get(url, params=params, timeout=60)
+            r = requests.get(url, params=params, timeout=60,
+                             headers={"User-Agent": "maxent-iraqi-bulbul (species distribution model)"})
+            if r.status_code == 429 or r.status_code >= 500:
+                wait = float(r.headers.get("Retry-After") or min(60, 5 * 2 ** attempt))
+                raise requests.HTTPError(f"HTTP {r.status_code}, waiting {wait:.0f} s", response=r)
             r.raise_for_status()
+            time.sleep(pause)
             return r.json()
         except requests.RequestException as e:
             if attempt == retries - 1:
                 raise
-            log.warning("GBIF request failed (%s), retrying", e)
-            time.sleep(2 ** attempt)
+            resp = getattr(e, "response", None)
+            wait = (float(resp.headers.get("Retry-After") or min(60, 5 * 2 ** attempt))
+                    if resp is not None and (resp.status_code == 429 or resp.status_code >= 500)
+                    else min(60, 2 ** attempt))
+            log.warning("GBIF request failed (%s); retrying in %.0f s", e, wait)
+            time.sleep(wait)
 
 
 def _gbif_record(r: dict) -> dict:
@@ -92,7 +101,7 @@ def _gbif_record(r: dict) -> dict:
 
 
 def download_gbif(species: str, bbox, tile_deg: float = 1.0, max_per_tile: int = 600,
-                  n_threads: int = 6) -> pd.DataFrame:
+                  n_threads: int = 2) -> pd.DataFrame:
     """Download georeferenced occurrence records from the GBIF occurrence search API.
 
     The area is split into `tile_deg` x `tile_deg` tiles and at most `max_per_tile` records are taken from
@@ -141,6 +150,19 @@ def download_gbif(species: str, bbox, tile_deg: float = 1.0, max_per_tile: int =
     df = pd.DataFrame(rows, columns=list(_gbif_record({}).keys()))
     df = df.drop_duplicates(subset="gbifID")
     log.info("Downloaded %d GBIF records from %d tiles", len(df), len(tiles))
+    return df
+
+
+def cached_gbif(cache_dir: Path, max_age_days: float, species: str, bbox, tile_deg=1.0, max_per_tile=600):
+    """download_gbif, reusing a cached copy of the same query if it is younger than `max_age_days`."""
+    key = "_".join([species.replace(" ", "-"), *(f"{b:g}" for b in bbox), f"{tile_deg:g}", str(max_per_tile)])
+    path = cache_dir / f"gbif_{key}.csv"
+    if max_age_days and path.exists() and (time.time() - path.stat().st_mtime) < max_age_days * 86400:
+        log.info("Using cached GBIF download %s", path.name)
+        return pd.read_csv(path, dtype={"gbifID": str})
+    df = download_gbif(species, bbox, tile_deg, max_per_tile)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
     return df
 
 

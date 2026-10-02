@@ -15,6 +15,7 @@ occurrences:
   gbif_supplement: true        # also add GBIF records from the whole training area to your file (duplicates removed)
   gbif_tile_deg: 1.0           # GBIF is queried per tile of this size (degrees) ...
   gbif_max_per_tile: 600       # ... taking at most this many records per tile (limits hotspot bias)
+  gbif_cache_days: 30          # reuse a downloaded GBIF query for this many days (0 = always re-download)
   min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
   max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
   thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
