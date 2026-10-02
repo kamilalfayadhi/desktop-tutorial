@@ -1,64 +1,96 @@
-17:02:06  STEP 1/8  Occurrence data
-17:02:06  Recovered occurrences.csv as a re-saved tab-separated (GBIF) file
-17:02:06  Read 687 records from /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/occurrences/occurrences.csv (lon=decimalLongitude, lat=decimalLatitude)
-17:02:06  STEP 2/8  Environmental layers
-17:02:06  Using cached /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/cache/wc2.1_2.5m_bio.zip
-17:02:08  Loaded 19 layers on a 228x288 grid
-17:02:08      input                               687
-17:02:08      valid_coordinates                   684
-17:02:08      inside_study_area                   684
-17:02:08      year_>=_1970                        681
-17:02:08      uncertainty_<=_10000m               678
-17:02:08      drop_fossil_and_captive             678
-17:02:08      unique_coordinates                  170
-17:02:08      on_valid_climate_cells              170
-17:02:08      one_per_raster_cell                 102
-17:02:08      thinned_5km                          78
-17:02:08  STEP 3/8  Background points
-17:02:08      10000 background points
-17:02:08  STEP 4/8  Variable selection (collinearity)
-17:02:08      retained: bio_1, bio_4, bio_7, bio_12, bio_15
-17:02:09  STEP 5/8  Model tuning
-17:02:09    linear                           rm=0.5  test AUC=0.735  AUC diff=0.033  OR10=0.126
-17:02:09    linear                           rm=1    test AUC=0.739  AUC diff=0.031  OR10=0.126
-17:02:09    linear                           rm=1.5  test AUC=0.741  AUC diff=0.030  OR10=0.126
-17:02:09    linear                           rm=2    test AUC=0.742  AUC diff=0.029  OR10=0.151
-17:02:10    linear                           rm=3    test AUC=0.743  AUC diff=0.028  OR10=0.151
-17:02:10    linear                           rm=4    test AUC=0.743  AUC diff=0.028  OR10=0.151
-17:02:11    linear,quadratic                 rm=0.5  test AUC=0.724  AUC diff=0.056  OR10=0.139
-17:02:11    linear,quadratic                 rm=1    test AUC=0.725  AUC diff=0.051  OR10=0.126
-17:02:12    linear,quadratic                 rm=1.5  test AUC=0.727  AUC diff=0.046  OR10=0.151
-17:02:12    linear,quadratic                 rm=2    test AUC=0.731  AUC diff=0.042  OR10=0.151
-17:02:13    linear,quadratic                 rm=3    test AUC=0.734  AUC diff=0.038  OR10=0.151
-17:02:13    linear,quadratic                 rm=4    test AUC=0.734  AUC diff=0.038  OR10=0.151
-17:02:17    linear,quadratic,hinge           rm=0.5  test AUC=0.791  AUC diff=0.124  OR10=0.277
-17:02:20    linear,quadratic,hinge           rm=1    test AUC=0.790  AUC diff=0.121  OR10=0.239
-17:02:22    linear,quadratic,hinge           rm=1.5  test AUC=0.790  AUC diff=0.119  OR10=0.201
-17:02:25    linear,quadratic,hinge           rm=2    test AUC=0.790  AUC diff=0.118  OR10=0.189
-17:02:27    linear,quadratic,hinge           rm=3    test AUC=0.790  AUC diff=0.117  OR10=0.176
-17:02:29    linear,quadratic,hinge           rm=4    test AUC=0.789  AUC diff=0.116  OR10=0.164
-17:02:30    linear,quadratic,product         rm=0.5  test AUC=0.719  AUC diff=0.064  OR10=0.114
-17:02:31    linear,quadratic,product         rm=1    test AUC=0.725  AUC diff=0.054  OR10=0.139
-17:02:31    linear,quadratic,product         rm=1.5  test AUC=0.728  AUC diff=0.049  OR10=0.139
-17:02:32    linear,quadratic,product         rm=2    test AUC=0.731  AUC diff=0.045  OR10=0.139
-17:02:32    linear,quadratic,product         rm=3    test AUC=0.733  AUC diff=0.042  OR10=0.151
-17:02:33    linear,quadratic,product         rm=4    test AUC=0.735  AUC diff=0.040  OR10=0.151
-17:02:37    linear,quadratic,hinge,product   rm=0.5  test AUC=0.794  AUC diff=0.121  OR10=0.302
-17:02:40    linear,quadratic,hinge,product   rm=1    test AUC=0.795  AUC diff=0.117  OR10=0.251
-17:02:43    linear,quadratic,hinge,product   rm=1.5  test AUC=0.794  AUC diff=0.115  OR10=0.201
-17:02:46    linear,quadratic,hinge,product   rm=2    test AUC=0.794  AUC diff=0.114  OR10=0.189
-17:02:48    linear,quadratic,hinge,product   rm=3    test AUC=0.794  AUC diff=0.112  OR10=0.176
-17:02:50    linear,quadratic,hinge,product   rm=4    test AUC=0.794  AUC diff=0.112  OR10=0.164
-17:02:50      selected: features=linear,quadratic,hinge,product rm=1.0 (test AUC 0.795)
-17:02:50  STEP 6/8  Final model and evaluation
-17:02:51      training_auc                 0.901
-17:02:51      max_tss                      0.658
-17:02:51      continuous_boyce_index       0.953
-17:02:51      cv_test_auc                  0.795
-17:02:51      cv_test_auc_sd               0.094
-17:02:51      cv_auc_diff                  0.117
-17:02:51      cv_omission_rate_10pct       0.251
-17:02:52  STEP 7/8  Prediction maps
-17:02:53      suitable area: 102945 km²
-17:02:53  STEP 8/8  Report
-17:02:53  Done. Report: /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/outputs/report.html
+17:20:05  STEP 1/8  Occurrence data
+17:20:05  Recovered occurrences.csv as a re-saved tab-separated (GBIF) file
+17:20:05  Read 687 records from /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/occurrences/occurrences.csv (lon=decimalLongitude, lat=decimalLatitude)
+17:20:05  STEP 2/8  Environmental layers
+17:20:05  Using cached /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/data/cache/wc2.1_2.5m_bio.zip
+17:20:07  Loaded 19 layers on a 228x288 grid
+17:20:07      input                               687
+17:20:07      valid_coordinates                   684
+17:20:07      inside_study_area                   684
+17:20:07      year_>=_1970                        681
+17:20:07      uncertainty_<=_10000m               678
+17:20:07      drop_fossil_and_captive             678
+17:20:07      unique_coordinates                  170
+17:20:07      on_valid_climate_cells              170
+17:20:07      one_per_raster_cell                 102
+17:20:07      thinned_5km                          78
+17:20:07  STEP 3/8  Background points
+17:20:07      10000 background points
+17:20:07  STEP 4/8  Variable selection (collinearity)
+17:20:07      retained: bio_1, bio_4, bio_7, bio_12, bio_15
+17:20:08  STEP 5/8  Model tuning
+17:20:08    linear                           rm=0.5  test AUC=0.735  AUC diff=0.033  OR10=0.126
+17:20:08    linear                           rm=1    test AUC=0.739  AUC diff=0.031  OR10=0.126
+17:20:08    linear                           rm=1.5  test AUC=0.741  AUC diff=0.030  OR10=0.126
+17:20:09    linear                           rm=2    test AUC=0.742  AUC diff=0.029  OR10=0.151
+17:20:09    linear                           rm=3    test AUC=0.743  AUC diff=0.028  OR10=0.151
+17:20:09    linear                           rm=4    test AUC=0.743  AUC diff=0.028  OR10=0.151
+17:20:10    linear,quadratic                 rm=0.5  test AUC=0.724  AUC diff=0.056  OR10=0.139
+17:20:11    linear,quadratic                 rm=1    test AUC=0.725  AUC diff=0.051  OR10=0.126
+17:20:11    linear,quadratic                 rm=1.5  test AUC=0.727  AUC diff=0.046  OR10=0.151
+17:20:12    linear,quadratic                 rm=2    test AUC=0.731  AUC diff=0.042  OR10=0.151
+17:20:12    linear,quadratic                 rm=3    test AUC=0.734  AUC diff=0.038  OR10=0.151
+17:20:13    linear,quadratic                 rm=4    test AUC=0.734  AUC diff=0.038  OR10=0.151
+17:20:17    linear,quadratic,hinge           rm=0.5  test AUC=0.791  AUC diff=0.124  OR10=0.277
+17:20:21    linear,quadratic,hinge           rm=1    test AUC=0.790  AUC diff=0.121  OR10=0.239
+17:20:23    linear,quadratic,hinge           rm=1.5  test AUC=0.790  AUC diff=0.119  OR10=0.201
+17:20:26    linear,quadratic,hinge           rm=2    test AUC=0.790  AUC diff=0.118  OR10=0.189
+17:20:28    linear,quadratic,hinge           rm=3    test AUC=0.790  AUC diff=0.117  OR10=0.176
+17:20:31    linear,quadratic,hinge           rm=4    test AUC=0.789  AUC diff=0.116  OR10=0.164
+17:20:32    linear,quadratic,product         rm=0.5  test AUC=0.719  AUC diff=0.064  OR10=0.114
+17:20:33    linear,quadratic,product         rm=1    test AUC=0.725  AUC diff=0.054  OR10=0.139
+17:20:34    linear,quadratic,product         rm=1.5  test AUC=0.728  AUC diff=0.049  OR10=0.139
+17:20:34    linear,quadratic,product         rm=2    test AUC=0.731  AUC diff=0.045  OR10=0.139
+17:20:35    linear,quadratic,product         rm=3    test AUC=0.733  AUC diff=0.042  OR10=0.151
+17:20:36    linear,quadratic,product         rm=4    test AUC=0.735  AUC diff=0.040  OR10=0.151
+17:20:40    linear,quadratic,hinge,product   rm=0.5  test AUC=0.794  AUC diff=0.121  OR10=0.302
+17:20:44    linear,quadratic,hinge,product   rm=1    test AUC=0.795  AUC diff=0.117  OR10=0.251
+17:20:47    linear,quadratic,hinge,product   rm=1.5  test AUC=0.794  AUC diff=0.115  OR10=0.201
+17:20:50    linear,quadratic,hinge,product   rm=2    test AUC=0.794  AUC diff=0.114  OR10=0.189
+17:20:52    linear,quadratic,hinge,product   rm=3    test AUC=0.794  AUC diff=0.112  OR10=0.176
+17:20:55    linear,quadratic,hinge,product   rm=4    test AUC=0.794  AUC diff=0.112  OR10=0.164
+17:20:55      selected: features=linear,quadratic,hinge,product rm=4.0 (test AUC 0.794)
+17:20:55  STEP 6/8  Final model and evaluation
+17:20:56      training_auc                 0.897
+17:20:56      max_tss                      0.637
+17:20:56      continuous_boyce_index       0.959
+17:20:56      cv_test_auc                  0.794
+17:20:56      cv_test_auc_sd               0.095
+17:20:56      cv_auc_diff                  0.112
+17:20:56      cv_omission_rate_10pct       0.164
+17:20:57  STEP 7/8  Prediction maps
+17:20:58      suitable area: 197044 km²
+17:20:58      future projection: MPI-ESM1-2-HR SSP245 2041-2060
+17:20:58  Using cached wc2.1_2.5m_bioc_MPI-ESM1-2-HR_ssp245_2041-2060_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:20:58      suitable area: 121124 km² (-38.5%), novel climate on 21.5% of cells
+17:20:58      future projection: MPI-ESM1-2-HR SSP245 2061-2080
+17:20:58  Using cached wc2.1_2.5m_bioc_MPI-ESM1-2-HR_ssp245_2061-2080_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:20:59      suitable area: 96451 km² (-51.1%), novel climate on 26.9% of cells
+17:20:59      future projection: MPI-ESM1-2-HR SSP585 2041-2060
+17:20:59  Using cached wc2.1_2.5m_bioc_MPI-ESM1-2-HR_ssp585_2041-2060_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:00      suitable area: 91951 km² (-53.3%), novel climate on 28.4% of cells
+17:21:00      future projection: MPI-ESM1-2-HR SSP585 2061-2080
+17:21:00  Using cached wc2.1_2.5m_bioc_MPI-ESM1-2-HR_ssp585_2061-2080_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:00      suitable area: 72328 km² (-63.3%), novel climate on 46.3% of cells
+17:21:00      future projection: UKESM1-0-LL SSP245 2041-2060
+17:21:00  Using cached wc2.1_2.5m_bioc_UKESM1-0-LL_ssp245_2041-2060_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:01      suitable area: 52317 km² (-73.4%), novel climate on 41.0% of cells
+17:21:01      future projection: UKESM1-0-LL SSP245 2061-2080
+17:21:01  Using cached wc2.1_2.5m_bioc_UKESM1-0-LL_ssp245_2061-2080_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:01      suitable area: 37967 km² (-80.7%), novel climate on 47.2% of cells
+17:21:01      future projection: UKESM1-0-LL SSP585 2041-2060
+17:21:01  Using cached wc2.1_2.5m_bioc_UKESM1-0-LL_ssp585_2041-2060_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:02      suitable area: 37675 km² (-80.9%), novel climate on 48.0% of cells
+17:21:02      future projection: UKESM1-0-LL SSP585 2061-2080
+17:21:02  Using cached wc2.1_2.5m_bioc_UKESM1-0-LL_ssp585_2061-2080_crop_37.5000_28.5000_49.5000_38.0000.tif
+17:21:02      suitable area: 22612 km² (-88.5%), novel climate on 58.1% of cells
+17:21:02      future projection: Ensemble mean SSP245 2041-2060
+17:21:03      suitable area: 92517 km² (-53.0%), novel climate on 43.6% of cells
+17:21:03      future projection: Ensemble mean SSP245 2061-2080
+17:21:04      suitable area: 64387 km² (-67.3%), novel climate on 48.6% of cells
+17:21:04      future projection: Ensemble mean SSP585 2041-2060
+17:21:04      suitable area: 63684 km² (-67.7%), novel climate on 50.4% of cells
+17:21:04      future projection: Ensemble mean SSP585 2061-2080
+17:21:05      suitable area: 44088 km² (-77.6%), novel climate on 62.1% of cells
+17:21:05  STEP 8/8  Report
+17:21:05  Done. Report: /home/runner/work/desktop-tutorial/desktop-tutorial/maxent_iraqi_bulbul/outputs/report.html
