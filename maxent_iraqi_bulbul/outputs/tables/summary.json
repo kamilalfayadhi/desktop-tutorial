@@ -82,29 +82,110 @@
   ],
   "selected_model": {
     "features": "linear,quadratic,hinge,product",
-    "regularization_multiplier": 1.0
+    "regularization_multiplier": 4.0
   },
   "metrics": {
-    "training_auc": 0.9012698717948718,
-    "max_tss": 0.6579512820512821,
-    "continuous_boyce_index": 0.9528069470572026,
-    "cv_test_auc": 0.7947744336012452,
-    "cv_test_auc_sd": 0.09428023990662328,
-    "cv_auc_diff": 0.11664538604130606,
-    "cv_omission_rate_10pct": 0.2513157894736842
+    "training_auc": 0.8974326923076924,
+    "max_tss": 0.6370948717948718,
+    "continuous_boyce_index": 0.959295045415486,
+    "cv_test_auc": 0.7937619102008521,
+    "cv_test_auc_sd": 0.09461355243916826,
+    "cv_auc_diff": 0.11156592084780989,
+    "cv_omission_rate_10pct": 0.1638157894736842
   },
   "thresholds": {
-    "max_tss (max sensitivity + specificity)": 0.5225766803903726,
-    "10th_percentile_training_presence": 0.25339308135469985,
-    "minimum_training_presence": 0.08284928725439056
+    "max_tss (max sensitivity + specificity)": 0.3650444368248792,
+    "10th_percentile_training_presence": 0.29123941163401,
+    "minimum_training_presence": 0.1082697466007474
   },
-  "suitable_area_km2": 102945.1306830029,
-  "future": null,
+  "suitable_area_km2": 197043.840468618,
+  "future": [
+    {
+      "label": "MPI-ESM1-2-HR SSP245 2041-2060",
+      "tag": "MPI-ESM1-2-HR_ssp245_2041-2060",
+      "gcm": "MPI-ESM1-2-HR",
+      "ssp": "245",
+      "period": "2041-2060",
+      "suitable_area_km2": 121123.77879036641,
+      "area_change_pct": -38.529527996254686,
+      "novel_climate_pct": 21.45932717923301
+    },
+    {
+      "label": "MPI-ESM1-2-HR SSP245 2061-2080",
+      "tag": "MPI-ESM1-2-HR_ssp245_2061-2080",
+      "gcm": "MPI-ESM1-2-HR",
+      "ssp": "245",
+      "period": "2061-2080",
+      "suitable_area_km2": 96450.79378732256,
+      "area_change_pct": -51.051099309707325,
+      "novel_climate_pct": 26.906635276624748
+    },
+    {
+      "label": "MPI-ESM1-2-HR SSP585 2041-2060",
+      "tag": "MPI-ESM1-2-HR_ssp585_2041-2060",
+      "gcm": "MPI-ESM1-2-HR",
+      "ssp": "585",
+      "period": "2041-2060",
+      "suitable_area_km2": 91951.38966466917,
+      "area_change_pct": -53.33455263255807,
+      "novel_climate_pct": 28.385787745492845
+    },
+    {
+      "label": "MPI-ESM1-2-HR SSP585 2061-2080",
+      "tag": "MPI-ESM1-2-HR_ssp585_2061-2080",
+      "gcm": "MPI-ESM1-2-HR",
+      "ssp": "585",
+      "period": "2061-2080",
+      "suitable_area_km2": 72327.53786440041,
+      "area_change_pct": -63.29368241484332,
+      "novel_climate_pct": 46.31373520847531
+    },
+    {
+      "label": "UKESM1-0-LL SSP245 2041-2060",
+      "tag": "UKESM1-0-LL_ssp245_2041-2060",
+      "gcm": "UKESM1-0-LL",
+      "ssp": "245",
+      "period": "2041-2060",
+      "suitable_area_km2": 52316.53909525787,
+      "area_change_pct": -73.44928977691642,
+      "novel_climate_pct": 41.00117712657209
+    },
+    {
+      "label": "UKESM1-0-LL SSP245 2061-2080",
+      "tag": "UKESM1-0-LL_ssp245_2061-2080",
+      "gcm": "UKESM1-0-LL",
+      "ssp": "245",
+      "period": "2061-2080",
+      "suitable_area_km2": 37966.668861904516,
+      "area_change_pct": -80.73186719685803,
+      "novel_climate_pct": 47.17179852549408
+    },
+    {
+      "label": "UKESM1-0-LL SSP585 2041-2060",
+      "tag": "UKESM1-0-LL_ssp585_2041-2060",
+      "gcm": "UKESM1-0-LL",
+      "ssp": "585",
+      "period": "2041-2060",
+      "suitable_area_km2": 37674.8630185741,
+      "area_change_pct": -80.87995903400271,
+      "novel_climate_pct": 47.986494021436094
+    },
+    {
+      "label": "UKESM1-0-LL SSP585 2061-2080",
+      "tag": "UKESM1-0-LL_ssp585_2061-2080",
+      "gcm": "UKESM1-0-LL",
+      "ssp": "585",
+      "period": "2061-2080",
+      "suitable_area_km2": 22611.87495432469,
+      "area_change_pct": -88.52444466137679,
+      "novel_climate_pct": 58.1314664518927
+    }
+  ],
   "variable_importance_pct": {
-    "bio_15": 39.33,
+    "bio_15": 41.84,
     "bio_12": 25.4,
-    "bio_4": 15.54,
-    "bio_1": 12.65,
-    "bio_7": 7.08
+    "bio_4": 13.5,
+    "bio_1": 13.23,
+    "bio_7": 6.04
   }
 }
