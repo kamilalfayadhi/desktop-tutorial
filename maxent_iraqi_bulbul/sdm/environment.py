@@ -121,17 +121,30 @@ def future_scenarios(fut_cfg: dict) -> list[dict]:
 
 def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: list[str],
                        scenario: dict) -> dict[str, np.ndarray]:
-    """Download a WorldClim CMIP6 multi-band bioclim GeoTIFF and warp it onto the current grid."""
+    """Download a WorldClim CMIP6 multi-band bioclim GeoTIFF and warp it onto the current grid.
+
+    Only a cut-out of all 19 bands on the study-area grid is kept in the cache; the global file
+    (often 1 GB or more) is deleted after use, so many scenarios fit on disk.
+    """
     res = cfg["environment"]["resolution"]
     url = WORLDCLIM_FUTURE.format(res=res, **scenario)
-    path = _download(url, cache_dir / Path(url).name)
-    out = {}
-    with rasterio.open(path) as src, WarpedVRT(src, crs=template["crs"], transform=template["transform"],
-                                                width=template["width"], height=template["height"]) as vrt:
-        for var in variables:
-            band = int(var.split("_")[1])
-            out[var] = vrt.read(band, masked=True).astype("float32").filled(np.nan)
-    return out
+    bounds = rasterio.transform.array_bounds(template["height"], template["width"], template["transform"])
+    key = "_".join(f"{b:.4f}" for b in bounds)
+    crop = cache_dir / f"{Path(url).stem}_crop_{key}.tif"
+    if not crop.exists():
+        path = _download(url, cache_dir / Path(url).name)
+        with rasterio.open(path) as src, WarpedVRT(src, crs=template["crs"], transform=template["transform"],
+                                                    width=template["width"], height=template["height"]) as vrt:
+            data = vrt.read(masked=True).astype("float32").filled(np.nan)
+        with rasterio.open(crop, "w", driver="GTiff", height=template["height"], width=template["width"],
+                           count=data.shape[0], dtype="float32", crs=template["crs"],
+                           transform=template["transform"], nodata=np.nan, compress="deflate") as dst:
+            dst.write(data)
+        path.unlink()
+    else:
+        log.info("Using cached %s", crop.name)
+    with rasterio.open(crop) as src:
+        return {var: src.read(int(var.split("_")[1])) for var in variables}
 
 
 def write_raster(path: Path, data: np.ndarray, template: dict, nodata=-9999.0):
