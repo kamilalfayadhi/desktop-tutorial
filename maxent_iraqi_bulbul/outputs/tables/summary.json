@@ -1,104 +1,95 @@
 {
   "species": "Pycnonotus leucotis",
-  "occurrence_source": "user file occurrences.csv",
+  "occurrence_source": "user file occurrences.csv (687) + GBIF (36,451)",
   "cleaning_steps": {
-    "input": 687,
-    "valid_coordinates": 684,
-    "inside_study_area": 684,
-    "year_>=_1970": 681,
-    "uncertainty_<=_10000m": 678,
-    "drop_fossil_and_captive": 678,
-    "unique_coordinates": 170,
-    "on_valid_climate_cells": 170,
-    "one_per_raster_cell": 102,
-    "thinned_5km": 78
+    "input": 37138,
+    "valid_coordinates": 37135,
+    "inside_study_area": 37135,
+    "year_>=_1970": 37104,
+    "uncertainty_<=_10000m": 36993,
+    "drop_fossil_and_captive": 36993,
+    "unique_coordinates": 11683,
+    "on_valid_climate_cells": 11656,
+    "one_per_raster_cell": 4752,
+    "thinned_10km": 2057
   },
-  "n_presences": 78,
-  "n_background": 10000,
+  "n_presences": 2057,
+  "n_background": 20000,
   "variables": [
     "bio_1",
+    "bio_2",
     "bio_4",
-    "bio_7",
     "bio_12",
-    "bio_15"
+    "bio_14",
+    "bio_15",
+    "bio_18",
+    "bio_19"
   ],
   "removed_variables": [
     {
       "variable": "bio_6",
-      "reason": "VIF = 18688322016043.2"
-    },
-    {
-      "variable": "bio_10",
-      "reason": "VIF = 4857.0"
+      "reason": "VIF = 52073260439391.3"
     },
     {
       "variable": "bio_11",
-      "reason": "VIF = 3365.2"
+      "reason": "VIF = 4836.3"
     },
     {
-      "variable": "bio_9",
-      "reason": "VIF = 1090.0"
-    },
-    {
-      "variable": "bio_2",
-      "reason": "VIF = 1009.9"
+      "variable": "bio_10",
+      "reason": "VIF = 833.3"
     },
     {
       "variable": "bio_16",
-      "reason": "VIF = 569.7"
+      "reason": "VIF = 150.9"
     },
     {
       "variable": "bio_5",
-      "reason": "VIF = 280.9"
+      "reason": "VIF = 140.5"
     },
     {
-      "variable": "bio_19",
-      "reason": "VIF = 116.2"
+      "variable": "bio_7",
+      "reason": "VIF = 99.8"
     },
     {
       "variable": "bio_13",
-      "reason": "VIF = 72.6"
-    },
-    {
-      "variable": "bio_17",
-      "reason": "VIF = 52.8"
+      "reason": "VIF = 44.4"
     },
     {
       "variable": "bio_3",
-      "reason": "VIF = 18.3"
+      "reason": "VIF = 32.2"
     },
     {
-      "variable": "bio_18",
-      "reason": "VIF = 11.0"
+      "variable": "bio_17",
+      "reason": "VIF = 24.2"
     },
     {
       "variable": "bio_8",
-      "reason": "|r| = 0.87 with bio_1"
+      "reason": "|r| = 0.82 with bio_1"
     },
     {
-      "variable": "bio_14",
+      "variable": "bio_9",
       "reason": "|r| = 0.71 with bio_1"
     }
   ],
   "selected_model": {
-    "features": "linear,quadratic,hinge,product",
+    "features": "linear,quadratic",
     "regularization_multiplier": 4.0
   },
   "metrics": {
-    "training_auc": 0.8974326923076924,
-    "max_tss": 0.6370948717948718,
-    "continuous_boyce_index": 0.959295045415486,
-    "cv_test_auc": 0.7937619102008521,
-    "cv_test_auc_sd": 0.09461355243916826,
-    "cv_auc_diff": 0.11156592084780989,
-    "cv_omission_rate_10pct": 0.1638157894736842
+    "training_auc": 0.8156314049586777,
+    "max_tss": 0.4979871900826446,
+    "continuous_boyce_index": 0.9977052999417587,
+    "cv_test_auc": 0.7264767256256871,
+    "cv_test_auc_sd": 0.04358975145628776,
+    "cv_auc_diff": 0.0835436357815631,
+    "cv_omission_rate_10pct": 0.1857919987911299
   },
   "thresholds": {
-    "max_tss (max sensitivity + specificity)": 0.3650444368248792,
-    "10th_percentile_training_presence": 0.29123941163401,
-    "minimum_training_presence": 0.1082697466007474
+    "max_tss (max sensitivity + specificity)": 0.4503056851466748,
+    "10th_percentile_training_presence": 0.17543294089303424,
+    "minimum_training_presence": 0.01176708413159333
   },
-  "suitable_area_km2": 197043.840468618,
+  "suitable_area_km2": 55173.46251908796,
   "future": [
     {
       "label": "MPI-ESM1-2-HR SSP245 2041-2060",
@@ -111,9 +102,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 121123.77879036641,
-      "area_change_pct": -38.529527996254686,
-      "novel_climate_pct": 21.45932717923301
+      "suitable_area_km2": 120083.07188521358,
+      "area_change_pct": 117.64643073410393,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "MPI-ESM1-2-HR SSP245 2061-2080",
@@ -126,9 +117,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 96450.79378732256,
-      "area_change_pct": -51.051099309707325,
-      "novel_climate_pct": 26.906635276624748
+      "suitable_area_km2": 148793.667520034,
+      "area_change_pct": 169.68339619533023,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "MPI-ESM1-2-HR SSP585 2041-2060",
@@ -141,9 +132,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 91951.38966466917,
-      "area_change_pct": -53.33455263255807,
-      "novel_climate_pct": 28.385787745492845
+      "suitable_area_km2": 128729.25006410037,
+      "area_change_pct": 133.3173308083843,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "MPI-ESM1-2-HR SSP585 2061-2080",
@@ -156,9 +147,9 @@
       "gcm": "MPI-ESM1-2-HR",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 72327.53786440041,
-      "area_change_pct": -63.29368241484332,
-      "novel_climate_pct": 46.31373520847531
+      "suitable_area_km2": 180294.42885665677,
+      "area_change_pct": 226.77744086531027,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "UKESM1-0-LL SSP245 2041-2060",
@@ -171,9 +162,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 52316.53909525787,
-      "area_change_pct": -73.44928977691642,
-      "novel_climate_pct": 41.00117712657209
+      "suitable_area_km2": 179680.31442084053,
+      "area_change_pct": 225.6643796076381,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "UKESM1-0-LL SSP245 2061-2080",
@@ -186,9 +177,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 37966.668861904516,
-      "area_change_pct": -80.73186719685803,
-      "novel_climate_pct": 47.17179852549408
+      "suitable_area_km2": 222814.14265783053,
+      "area_change_pct": 303.8429572563896,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "UKESM1-0-LL SSP585 2041-2060",
@@ -201,9 +192,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 37674.8630185741,
-      "area_change_pct": -80.87995903400271,
-      "novel_climate_pct": 47.986494021436094
+      "suitable_area_km2": 235443.59900891257,
+      "area_change_pct": 326.73341178733864,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "UKESM1-0-LL SSP585 2061-2080",
@@ -216,9 +207,9 @@
       "gcm": "UKESM1-0-LL",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 22611.87495432469,
-      "area_change_pct": -88.52444466137679,
-      "novel_climate_pct": 58.1314664518927
+      "suitable_area_km2": 350851.68064593093,
+      "area_change_pct": 535.906583757634,
+      "novel_climate_pct": 9.653986741837556
     },
     {
       "label": "Ensemble mean SSP245 2041-2060",
@@ -232,9 +223,9 @@
       "gcm": "ensemble mean",
       "ssp": "245",
       "period": "2041-2060",
-      "suitable_area_km2": 92516.98406092133,
-      "area_change_pct": -53.047512756098584,
-      "novel_climate_pct": 43.590855585155815
+      "suitable_area_km2": 150494.12245455268,
+      "area_change_pct": 172.76541218069704,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "Ensemble mean SSP245 2061-2080",
@@ -248,9 +239,9 @@
       "gcm": "ensemble mean",
       "ssp": "245",
       "period": "2061-2080",
-      "suitable_area_km2": 64386.6536719901,
-      "area_change_pct": -67.32369125628945,
-      "novel_climate_pct": 48.56421535220866
+      "suitable_area_km2": 184549.19804929596,
+      "area_change_pct": 234.48906344322475,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "Ensemble mean SSP585 2041-2060",
@@ -264,9 +255,9 @@
       "gcm": "ensemble mean",
       "ssp": "585",
       "period": "2041-2060",
-      "suitable_area_km2": 63684.26998727204,
-      "area_change_pct": -67.68015187086517,
-      "novel_climate_pct": 50.36088222538876
+      "suitable_area_km2": 181427.25282416953,
+      "area_change_pct": 228.83064527879225,
+      "novel_climate_pct": 0.0
     },
     {
       "label": "Ensemble mean SSP585 2061-2080",
@@ -280,16 +271,19 @@
       "gcm": "ensemble mean",
       "ssp": "585",
       "period": "2061-2080",
-      "suitable_area_km2": 44088.03819557402,
-      "area_change_pct": -77.62526446362293,
-      "novel_climate_pct": 62.11975714020197
+      "suitable_area_km2": 276740.05015446316,
+      "area_change_pct": 401.5818067584963,
+      "novel_climate_pct": 9.653986741837556
     }
   ],
   "variable_importance_pct": {
-    "bio_15": 41.84,
-    "bio_12": 25.4,
-    "bio_4": 13.5,
-    "bio_1": 13.23,
-    "bio_7": 6.04
+    "bio_15": 44.82,
+    "bio_1": 34.43,
+    "bio_2": 8.59,
+    "bio_12": 6.34,
+    "bio_19": 3.88,
+    "bio_14": 1.32,
+    "bio_18": 0.58,
+    "bio_4": 0.05
   }
 }
