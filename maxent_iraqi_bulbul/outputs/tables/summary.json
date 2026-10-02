@@ -1,0 +1,110 @@
+{
+  "species": "Pycnonotus leucotis",
+  "occurrence_source": "GBIF occurrence API",
+  "cleaning_steps": {
+    "input": 7607,
+    "valid_coordinates": 7607,
+    "inside_study_area": 7607,
+    "year_>=_1970": 7603,
+    "uncertainty_<=_10000m": 7598,
+    "drop_fossil_and_captive": 7598,
+    "unique_coordinates": 1187,
+    "on_valid_climate_cells": 1185,
+    "one_per_raster_cell": 422,
+    "thinned_5km": 287
+  },
+  "n_presences": 287,
+  "n_background": 10000,
+  "variables": [
+    "bio_1",
+    "bio_7",
+    "bio_12",
+    "bio_14",
+    "bio_15"
+  ],
+  "removed_variables": [
+    {
+      "variable": "bio_5",
+      "reason": "VIF = 16758650497809.4"
+    },
+    {
+      "variable": "bio_10",
+      "reason": "VIF = 3997.5"
+    },
+    {
+      "variable": "bio_11",
+      "reason": "VIF = 2374.7"
+    },
+    {
+      "variable": "bio_9",
+      "reason": "VIF = 754.3"
+    },
+    {
+      "variable": "bio_2",
+      "reason": "VIF = 614.3"
+    },
+    {
+      "variable": "bio_16",
+      "reason": "VIF = 496.9"
+    },
+    {
+      "variable": "bio_6",
+      "reason": "VIF = 210.8"
+    },
+    {
+      "variable": "bio_13",
+      "reason": "VIF = 88.0"
+    },
+    {
+      "variable": "bio_19",
+      "reason": "VIF = 72.5"
+    },
+    {
+      "variable": "bio_17",
+      "reason": "VIF = 52.4"
+    },
+    {
+      "variable": "bio_4",
+      "reason": "VIF = 22.6"
+    },
+    {
+      "variable": "bio_18",
+      "reason": "VIF = 13.3"
+    },
+    {
+      "variable": "bio_8",
+      "reason": "|r| = 0.82 with bio_1"
+    },
+    {
+      "variable": "bio_3",
+      "reason": "|r| = 0.77 with bio_12"
+    }
+  ],
+  "selected_model": {
+    "features": "linear",
+    "regularization_multiplier": 3.0
+  },
+  "metrics": {
+    "training_auc": 0.815120731707317,
+    "max_tss": 0.4946954703832752,
+    "continuous_boyce_index": 0.9755154338963308,
+    "cv_test_auc": 0.6705968105082443,
+    "cv_test_auc_sd": 0.18990645794205063,
+    "cv_auc_diff": 0.14209593567794984,
+    "cv_omission_rate_10pct": 0.09404342723004695
+  },
+  "thresholds": {
+    "max_tss (max sensitivity + specificity)": 0.5686477740159975,
+    "10th_percentile_training_presence": 0.1946777822228519,
+    "minimum_training_presence": 0.007247144830023866
+  },
+  "suitable_area_km2": 233211.85520031542,
+  "future": null,
+  "variable_importance_pct": {
+    "bio_1": 62.74,
+    "bio_15": 18.09,
+    "bio_12": 18.05,
+    "bio_7": 0.68,
+    "bio_14": 0.44
+  }
+}

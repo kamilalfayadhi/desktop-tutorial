@@ -1,0 +1,33 @@
+# Self-test configuration: runs the pipeline on synthetic data (see make_synthetic_data.py).
+species:
+  name: "Virtual species (synthetic test)"
+occurrences:
+  file: "synthetic/occurrences.csv"
+  download_from_gbif_if_missing: false
+  gbif_max_records: 0
+  min_year: 1970
+  max_coord_uncertainty_m: 10000
+  thin_km: 5
+study_area:
+  bbox: [37.5, 28.5, 49.5, 38.0]
+  boundaries_file: null
+environment:
+  source: "local"
+  resolution: "2.5m"
+  local_dir: "synthetic/env"
+  variables: "all"
+  vif_threshold: 10
+  correlation_threshold: 0.7
+  keep_variables: [bio_1, bio_12]
+background:
+  n_points: 10000
+  buffer_km: 300
+model:
+  feature_classes: ["linear", "linear,quadratic", "linear,quadratic,hinge"]
+  regularization_multipliers: [0.5, 1, 2, 4]
+  cv_method: "block"
+  selection_metric: "test_auc"
+  random_seed: 42
+future:
+  enabled: false
+output_dir: "synthetic/outputs"
