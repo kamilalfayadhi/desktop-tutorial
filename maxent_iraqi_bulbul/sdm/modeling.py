@@ -117,8 +117,13 @@ def tune(x_pres, x_bg, pres_folds, bg_folds, feature_classes, rms, seed) -> pd.D
     return pd.DataFrame(results)
 
 
-def choose_best(tuning: pd.DataFrame, metric: str) -> pd.Series:
-    if metric == "auc_diff":
+def choose_best(tuning: pd.DataFrame, metric: str, auc_tolerance: float = 0.005) -> pd.Series:
+    if metric == "auc_then_or10":
+        # among models within `auc_tolerance` of the best test AUC, take the lowest omission rate,
+        # then the strongest regularization (simplest model)
+        near_best = tuning[tuning["test_auc"] >= tuning["test_auc"].max() - auc_tolerance]
+        ranked = near_best.sort_values(["or10", "rm", "test_auc"], ascending=[True, False, False])
+    elif metric == "auc_diff":
         ranked = tuning.sort_values(["auc_diff", "test_auc"], ascending=[True, False])
     else:
         ranked = tuning.sort_values(["test_auc", "auc_diff"], ascending=[False, True])

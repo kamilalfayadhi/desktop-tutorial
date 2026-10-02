@@ -135,7 +135,8 @@ def main(argv=None):
     tuning = modeling.tune(x_pres, x_bg, pf, bf, cfg["model"]["feature_classes"],
                            cfg["model"]["regularization_multipliers"], seed)
     tuning.to_csv(out / "tables" / "tuning_results.csv", index=False)
-    best = modeling.choose_best(tuning, cfg["model"].get("selection_metric", "test_auc"))
+    best = modeling.choose_best(tuning, cfg["model"].get("selection_metric", "test_auc"),
+                                cfg["model"].get("auc_tolerance", 0.005))
     log.info("    selected: features=%s rm=%s (test AUC %.3f)", best["features"], best["rm"], best["test_auc"])
     plots.tuning_plot(out / "figures" / "tuning.png", tuning, best)
 

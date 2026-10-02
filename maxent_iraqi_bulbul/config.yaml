@@ -43,7 +43,10 @@ model:
   feature_classes: ["linear", "linear,quadratic", "linear,quadratic,hinge", "linear,quadratic,product", "linear,quadratic,hinge,product"]
   regularization_multipliers: [0.5, 1, 1.5, 2, 3, 4]
   cv_method: "block"           # "block" (4 spatial blocks, ENMeval-style) or "random" (5-fold)
-  selection_metric: "test_auc"  # "test_auc" (mean CV AUC) or "auc_diff" (lowest overfitting, AUC as tiebreak)
+  # "auc_then_or10": among models within auc_tolerance of the best CV AUC, lowest omission rate (OR10),
+  #                  then strongest regularization. "test_auc": highest CV AUC. "auc_diff": least overfitting.
+  selection_metric: "auc_then_or10"
+  auc_tolerance: 0.005
   random_seed: 42
 
 future:

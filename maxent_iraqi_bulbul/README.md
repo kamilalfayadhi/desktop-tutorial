@@ -40,6 +40,7 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 | `environment.keep_variables` | bio_1, bio_12 | Never removed by the collinearity filter |
 | `background.buffer_km` | 300 | Background sampled within this distance of records (accessible area) |
 | `model.feature_classes` / `regularization_multipliers` | 5 × 6 grid | Candidate models compared by cross-validation |
+| `model.selection_metric` | auc_then_or10 | Among settings within 0.005 of the best CV AUC, pick the lowest omission rate, then the strongest regularization |
 | `future.enabled` | false | Also project to a CMIP6 scenario (GCM, SSP, period) |
 
 ## Outputs (`outputs/`)
@@ -65,7 +66,8 @@ checks that the predicted map matches the true one (Spearman ρ > 0.7; the curre
 * MaxEnt is fitted with [`elapid`](https://github.com/earth-chris/elapid), a Python implementation of Maxent
   (same features: linear, quadratic, hinge, product, threshold; cloglog output).
 * Cross-validation uses ENMeval-style "block" partitioning: 4 spatial blocks with equal numbers of records.
-  The best settings are chosen by mean test AUC, then refit on all data.
+  Among settings within 0.005 of the best mean test AUC, the one with the lowest 10th-percentile omission
+  rate is chosen (ties go to stronger regularization), then refit on all data.
 * Clean your own records carefully. Captive or escaped birds, wrong coordinates and strong observer bias around
   cities all affect the result.
 * Cite: Phillips et al. 2006/2017 (MaxEnt), Fick & Hijmans 2017 (WorldClim 2), and GBIF (create a download DOI for publication).

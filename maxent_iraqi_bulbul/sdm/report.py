@@ -36,6 +36,13 @@ METRIC_LABELS = {
     "cv_omission_rate_10pct": "Omission rate at 10th percentile (CV)",
 }
 
+SELECTION_RULES = {
+    "test_auc": "The model with the highest mean test AUC was selected.",
+    "auc_diff": "The model with the least overfitting (smallest train − test AUC difference) was selected.",
+    "auc_then_or10": ("Among models within {tol} of the best mean test AUC, the one with the lowest 10th-percentile "
+                      "omission rate (then the strongest regularization) was selected."),
+}
+
 
 def _img(path: Path) -> str:
     data = base64.b64encode(path.read_bytes()).decode()
@@ -123,6 +130,7 @@ duplicates) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduc
 <h2>3. Model tuning</h2>
 <p>{len(ctx['tuning'])} candidate models (feature classes × regularization multipliers) were evaluated with
 {"4-fold spatial block" if cfg['model']['cv_method'] == 'block' else "5-fold random"} cross-validation.
+{SELECTION_RULES.get(cfg['model'].get('selection_metric', 'test_auc'), '').format(tol=cfg['model'].get('auc_tolerance', 0.005))}
 Selected: <b>features = {html.escape(best['features'])}, RM = {best['rm']}</b>
 (test AUC {best['test_auc']:.3f} ± {best['test_auc_sd']:.3f}, AUC diff {best['auc_diff']:.3f}, OR10 {best['or10']:.3f}).</p>
 {_table(tuning)}
