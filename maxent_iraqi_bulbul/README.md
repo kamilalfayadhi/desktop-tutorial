@@ -36,7 +36,7 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 | `species.name` | *Pycnonotus leucotis* | Name used for GBIF and in titles |
 | `occurrences.thin_km` | 10 | Minimum distance between kept records (reduces sampling bias) |
 | `study_area.bbox` | Iraq + ~1° margin | Area mapped and reported (maps, suitable area, future projections) |
-| `study_area.training_bbox` | 34–78°E, 20–40°N | Area the model is trained on: the whole native range, so the full climatic niche is learned |
+| `study_area.training_bbox` | 34–64°E, 20–40°N | Area the model is trained on: the western range (Turkey/Levant to Iran, the Gulf and western Pakistan), which includes climates hotter than Iraq; `[34, 20, 78, 40]` adds the Indian subcontinent |
 | `occurrences.gbif_supplement` | true | Add GBIF records from the training area to your file (duplicates removed) |
 | `environment.resolution` | 2.5m (~4.5 km) | WorldClim resolution: 10m, 5m, 2.5m, 30s |
 | `environment.keep_variables` | bio_1, bio_12 | Never removed by the collinearity filter |

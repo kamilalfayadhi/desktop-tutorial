@@ -23,11 +23,12 @@ occurrences:
 study_area:
   # Area MAPPED and reported, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
   bbox: [37.5, 28.5, 49.5, 38.0]
-  # Area the model is TRAINED on. Default: the whole native range of the white-eared bulbul
-  # (SE Turkey and the Levant to Iran, the Gulf, Pakistan and NW India), so the model learns the full
-  # climatic niche, including conditions hotter than Iraq today. Maps and areas are still reported for `bbox`.
-  # null = train on `bbox` only.
-  training_bbox: [34.0, 20.0, 78.0, 40.0]
+  # Area the model is TRAINED on. Default: the western part of the white-eared bulbul's range (SE Turkey and
+  # the Levant, Iraq, Iran, Arabia and the Gulf, Afghanistan and western Pakistan). It includes climates hotter
+  # than Iraq today, which future projections need, but leaves out the Indian subcontinent: its many records and
+  # monsoon climate dominated a whole-range model and fitted Iraq poorly ([34, 20, 78, 40] = whole range).
+  # Maps and areas are still reported for `bbox`. null = train on `bbox` only.
+  training_bbox: [34.0, 20.0, 64.0, 40.0]
   # Optional country/province outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
   boundaries_file: null
 

@@ -157,9 +157,22 @@ def cached_gbif(cache_dir: Path, max_age_days: float, species: str, bbox, tile_d
     """download_gbif, reusing a cached copy of the same query if it is younger than `max_age_days`."""
     key = "_".join([species.replace(" ", "-"), *(f"{b:g}" for b in bbox), f"{tile_deg:g}", str(max_per_tile)])
     path = cache_dir / f"gbif_{key}.csv"
-    if max_age_days and path.exists() and (time.time() - path.stat().st_mtime) < max_age_days * 86400:
+    fresh = lambda p: max_age_days and (time.time() - p.stat().st_mtime) < max_age_days * 86400  # noqa: E731
+    if path.exists() and fresh(path):
         log.info("Using cached GBIF download %s", path.name)
         return pd.read_csv(path, dtype={"gbifID": str})
+    # A cached query over a larger area on the same tile grid contains exactly the records this one would fetch.
+    for other in sorted(cache_dir.glob(f"gbif_{species.replace(' ', '-')}_*_{tile_deg:g}_{max_per_tile}.csv")):
+        try:
+            ob = [float(v) for v in other.stem.split("_")[2:6]]
+        except ValueError:
+            continue
+        aligned = all(abs(((a - b) / tile_deg) - round((a - b) / tile_deg)) < 1e-9 for a, b in zip(bbox[:2], ob[:2]))
+        inside = ob[0] <= bbox[0] and ob[1] <= bbox[1] and ob[2] >= bbox[2] and ob[3] >= bbox[3]
+        if aligned and inside and fresh(other):
+            log.info("Using cached GBIF download %s, cut to %s", other.name, bbox)
+            df = pd.read_csv(other, dtype={"gbifID": str})
+            return df[df["lon"].between(bbox[0], bbox[2]) & df["lat"].between(bbox[1], bbox[3])].reset_index(drop=True)
     df = download_gbif(species, bbox, tile_deg, max_per_tile)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
