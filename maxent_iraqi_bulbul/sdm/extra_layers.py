@@ -32,7 +32,7 @@ WORLDCOVER_CLASSES = {
     "bare": 60, "water": 80, "wetland": 90, "mangrove": 95,
 }
 DESCRIPTIONS = {
-    "dist_river_km": "Distance to nearest major river (km)",
+    "dist_river_km": "Distance to nearest major river (km, capped)",
     **{f"lc_{k}": f"Land cover: {k} fraction (ESA WorldCover)" for k in WORLDCOVER_CLASSES},
 }
 
@@ -175,7 +175,11 @@ def load(cfg: dict, template: dict, cache_dir: Path) -> dict[str, np.ndarray]:
     extra_cfg = cfg["environment"].get("extra_layers") or {}
     out = {}
     if extra_cfg.get("river_distance"):
-        out["dist_river_km"] = river_distance(template, cache_dir)
+        dist = river_distance(template, cache_dir)
+        cap = extra_cfg.get("river_distance_cap_km")
+        # Beyond a few tens of km a river has no local effect; an uncapped distance mostly encodes region
+        # (e.g. the river-less Gulf coast), so it is capped.
+        out["dist_river_km"] = np.minimum(dist, cap) if cap else dist
     if extra_cfg.get("landcover"):
         out.update(landcover_fractions(template, list(extra_cfg["landcover"]), cache_dir,
                                        extra_cfg.get("landcover_overview_level", 3)))

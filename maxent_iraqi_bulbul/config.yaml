@@ -44,6 +44,7 @@ environment:
   # Non-climate predictors (held constant in future projections):
   extra_layers:
     river_distance: true       # km to the nearest major river (Natural Earth 1:10m centre-lines)
+    river_distance_cap_km: 50  # distances beyond this are set to this value (river effect is local); null = no cap
     landcover: [tree, cropland, built]  # cell fractions from ESA WorldCover 2021; also: shrub, grass, bare, water, wetland
     landcover_overview_level: 3  # WorldCover is read at 10 m x 2^(level+1) (3 = ~160 m) before averaging
 
