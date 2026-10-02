@@ -184,34 +184,65 @@ def main(argv=None):
     log.info("    suitable area: %.0f km²", suitable_km2)
 
     future = []
+
+    def save_projection(label, tag, fut, mess, info, agreement=None, n_models=None):
+        """Write rasters/figures for one projection and record its summary row."""
+        fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
+        env.write_raster(out / "rasters" / f"suitability_{tag}.tif", fut, template)
+        env.write_raster(out / "rasters" / f"binary_maxTSS_{tag}.tif", fut_bin, template)
+        env.write_raster(out / "rasters" / f"mess_{tag}.tif", mess, template)
+        plots.suitability_map(out / "figures" / f"suitability_{tag}.png", fut, template, None,
+                              f"{name} – suitability {label}", boundaries)
+        plots.change_map(out / "figures" / f"change_{tag}.png", fut - current, template,
+                         f"Change in suitability, {label}")
+        plots.change_map(out / "figures" / f"mess_{tag}.png", np.clip(mess, -100, 100), template,
+                         f"MESS {label} (negative = novel climate)", label="MESS similarity")
+        figures = ["suitability", "change", "mess"]
+        if agreement is not None:
+            env.write_raster(out / "rasters" / f"agreement_{tag}.tif", agreement, template)
+            plots.agreement_map(out / "figures" / f"agreement_{tag}.png", agreement, n_models, template, pres,
+                                f"Model agreement on suitable habitat, SSP{info['ssp']} {info['period']}")
+            figures.append("agreement")
+        fut_km2 = float(np.nansum(area * (fut_bin == 1)))
+        valid = ~np.isnan(mess)
+        future.append({
+            "label": label, "tag": tag, "figures": figures, **info, "suitable_area_km2": fut_km2,
+            "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan"),
+            "novel_climate_pct": float(100 * np.mean(mess[valid] < 0)) if valid.any() else float("nan"),
+        })
+        log.info("    suitable area: %.0f km² (%+.1f%%), novel climate on %.1f%% of cells",
+                 fut_km2, future[-1]["area_change_pct"], future[-1]["novel_climate_pct"])
+
     if cfg.get("future", {}).get("enabled"):
+        by_ssp_period: dict[tuple, list] = {}
         for sc in env.future_scenarios(cfg["future"]):
             label = f"{sc['gcm']} SSP{sc['ssp']} {sc['period']}"
-            tag = f"{sc['gcm']}_ssp{sc['ssp']}_{sc['period']}"
             log.info("    future projection: %s", label)
             fut_layers = env.load_future_layers(cfg, cache, template, variables, sc)
             fut = modeling.predict_grid(model, fut_layers, variables)
-            fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
             mess = modeling.mess(x_bg, fut_layers, variables)
-            env.write_raster(out / "rasters" / f"suitability_{tag}.tif", fut, template)
-            env.write_raster(out / "rasters" / f"binary_maxTSS_{tag}.tif", fut_bin, template)
-            env.write_raster(out / "rasters" / f"mess_{tag}.tif", mess, template)
-            plots.suitability_map(out / "figures" / f"suitability_{tag}.png", fut, template, None,
-                                  f"{name} – suitability {label}", boundaries)
-            plots.change_map(out / "figures" / f"change_{tag}.png", fut - current, template,
-                             f"Change in suitability, {label}")
-            plots.change_map(out / "figures" / f"mess_{tag}.png", np.clip(mess, -100, 100), template,
-                             f"MESS {label} (negative = novel climate)")
-            fut_km2 = float(np.nansum(area * (fut_bin == 1)))
-            valid = ~np.isnan(mess)
-            future.append({
-                "label": label, "tag": tag, **sc, "suitable_area_km2": fut_km2,
-                "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan"),
-                "novel_climate_pct": float(100 * np.mean(mess[valid] < 0)) if valid.any() else float("nan"),
-            })
-            log.info("    suitable area: %.0f km² (%+.1f%%), novel climate on %.1f%% of cells",
-                     fut_km2, future[-1]["area_change_pct"], future[-1]["novel_climate_pct"])
-        pd.DataFrame(future).drop(columns="tag").to_csv(out / "tables" / "future_scenarios.csv", index=False)
+            save_projection(label, f"{sc['gcm']}_ssp{sc['ssp']}_{sc['period']}", fut, mess, sc)
+            by_ssp_period.setdefault((sc["ssp"], sc["period"]), []).append((fut, mess))
+
+        # Ensemble mean across climate models: mean suitability, most pessimistic (minimum) MESS,
+        # and the number of models that predict suitable habitat in each cell.
+        if cfg["future"].get("ensemble", True):
+            for (ssp, period), runs in by_ssp_period.items():
+                if len(runs) < 2:
+                    continue
+                label = f"Ensemble mean SSP{ssp} {period}"
+                log.info("    future projection: %s", label)
+                futs = np.stack([r[0] for r in runs])
+                messes = np.stack([r[1] for r in runs])
+                any_nan = np.isnan(futs).any(axis=0)
+                ens = np.where(any_nan, np.nan, futs.mean(axis=0))
+                ens_mess = np.where(np.isnan(messes).any(axis=0), np.nan, messes.min(axis=0))
+                agreement = np.where(any_nan, np.nan, (futs >= thr).sum(axis=0).astype("float32"))
+                save_projection(label, f"ensemble_ssp{ssp}_{period}", ens, ens_mess,
+                                {"gcm": "ensemble mean", "ssp": ssp, "period": period},
+                                agreement=agreement, n_models=len(runs))
+
+        pd.DataFrame(future).drop(columns=["tag", "figures"]).to_csv(out / "tables" / "future_scenarios.csv", index=False)
 
     # 8. Report ---------------------------------------------------------------------------
     log.info("STEP 8/8  Report")

@@ -102,12 +102,14 @@ def build(out: Path, ctx: dict) -> Path:
         })
         sections = "".join(
             f"<h3>{html.escape(f['label'])}</h3>"
-            + "".join(_img(fig / f"{kind}_{f['tag']}.png") for kind in ("suitability", "change", "mess"))
+            + "".join(_img(fig / f"{kind}_{f['tag']}.png") for kind in f["figures"])
             for f in fut)
         future_html = f"""
 <h2>7. Future projections</h2>
 <p>Current suitable area: <b>{ctx['suitable_area_km2']:,.0f} km²</b> (max-TSS threshold, applied unchanged to every scenario).
-Areas with negative MESS have climates outside the range of current training conditions; predictions there are extrapolations.</p>
+Areas with negative MESS have climates outside the range of current training conditions; predictions there are extrapolations.
+Ensemble rows average the suitability of all climate models for the same SSP and period, use the lowest MESS of the models,
+and include a map of how many models predict suitable habitat in each cell.</p>
 {_table(table, floatfmt="{:+.1f}")}
 {sections}"""
 

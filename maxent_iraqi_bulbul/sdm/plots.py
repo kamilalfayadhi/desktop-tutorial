@@ -78,11 +78,30 @@ def binary_map(path, binary, template, pres, title, threshold, boundaries=None):
     plt.close(fig)
 
 
-def change_map(path, change, template, title):
+def change_map(path, change, template, title, label="Change in suitability (future − current)"):
     fig, ax = plt.subplots(figsize=(8, 6.5))
     lim = np.nanmax(np.abs(change)) or 1
     im = ax.imshow(change, extent=_extent(template), cmap=DIVERGING, vmin=-lim, vmax=lim, interpolation="nearest")
-    fig.colorbar(im, ax=ax, shrink=0.8, label="Change in suitability (future − current)")
+    fig.colorbar(im, ax=ax, shrink=0.8, label=label)
+    ax.set_title(title)
+    _map_axes(ax)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def agreement_map(path, agreement, n_models, template, pres, title):
+    """Number of climate models (0..n) predicting suitable habitat in each cell."""
+    fig, ax = plt.subplots(figsize=(8, 6.5))
+    colors = SUITABILITY(np.linspace(0.0, 0.85, n_models + 1))
+    colors[0] = matplotlib.colors.to_rgba("#e9e8e4")
+    cmap = ListedColormap(colors)
+    im = ax.imshow(agreement, extent=_extent(template), cmap=cmap, vmin=-0.5, vmax=n_models + 0.5,
+                   interpolation="nearest")
+    _points(ax, pres)
+    ax.legend(loc="lower left", frameon=True)
+    cb = fig.colorbar(im, ax=ax, shrink=0.8, ticks=range(n_models + 1))
+    cb.set_label(f"Models predicting suitable (of {n_models})")
     ax.set_title(title)
     _map_axes(ax)
     fig.tight_layout()

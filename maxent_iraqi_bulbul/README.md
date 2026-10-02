@@ -42,6 +42,7 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 | `model.feature_classes` / `regularization_multipliers` | 5 × 6 grid | Candidate models compared by cross-validation |
 | `model.selection_metric` | auc_then_or10 | Among settings within 0.005 of the best CV AUC, pick the lowest omission rate, then the strongest regularization |
 | `future.enabled` | true | Project to every combination of `gcms` × `ssps` × `periods` (default: MPI-ESM1-2-HR and UKESM1-0-LL, SSP2-4.5 and SSP5-8.5, 2041–2060 and 2061–2080) |
+| `future.ensemble` | true | Also average the climate models for each SSP × period (mean suitability, lowest MESS, and a model-agreement map) |
 
 ## Outputs (`outputs/`)
 

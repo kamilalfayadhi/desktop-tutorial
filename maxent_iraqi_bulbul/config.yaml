@@ -56,5 +56,6 @@ future:
   gcms: ["MPI-ESM1-2-HR", "UKESM1-0-LL"]
   ssps: ["245", "585"]         # 126, 245, 370, 585
   periods: ["2041-2060", "2061-2080"]  # 2021-2040, 2041-2060, 2061-2080, 2081-2100
+  ensemble: true               # also average the GCMs for each SSP x period (needs 2+ GCMs)
 
 output_dir: "outputs"
