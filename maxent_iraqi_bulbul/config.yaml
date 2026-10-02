@@ -13,7 +13,8 @@ occurrences:
   file: "data/occurrences/occurrences.csv"
   download_from_gbif_if_missing: true
   gbif_supplement: true        # also add GBIF records from the whole training area to your file (duplicates removed)
-  gbif_max_records: 60000
+  gbif_tile_deg: 1.0           # GBIF is queried per tile of this size (degrees) ...
+  gbif_max_per_tile: 600       # ... taking at most this many records per tile (limits hotspot bias)
   min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
   max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
   thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell

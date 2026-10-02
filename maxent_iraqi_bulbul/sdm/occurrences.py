@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import time
 from pathlib import Path
 
 import numpy as np
@@ -63,46 +64,84 @@ def read_occurrence_file(path: Path) -> pd.DataFrame:
     return df
 
 
-def download_gbif(species: str, bbox, max_records: int) -> pd.DataFrame:
-    """Download georeferenced occurrence records from the GBIF occurrence search API."""
-    match = requests.get(f"{GBIF_API}/species/match", params={"name": species}, timeout=60).json()
+def _gbif_get(url, params, retries=4):
+    """GET a GBIF API endpoint with a short timeout and retries."""
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, params=params, timeout=60)
+            r.raise_for_status()
+            return r.json()
+        except requests.RequestException as e:
+            if attempt == retries - 1:
+                raise
+            log.warning("GBIF request failed (%s), retrying", e)
+            time.sleep(2 ** attempt)
+
+
+def _gbif_record(r: dict) -> dict:
+    return {
+        "lon": r.get("decimalLongitude"),
+        "lat": r.get("decimalLatitude"),
+        "year": r.get("year"),
+        "coordinateUncertaintyInMeters": r.get("coordinateUncertaintyInMeters"),
+        "basisOfRecord": r.get("basisOfRecord"),
+        "country": r.get("countryCode"),
+        "gbifID": r.get("key"),
+        "datasetKey": r.get("datasetKey"),
+    }
+
+
+def download_gbif(species: str, bbox, tile_deg: float = 1.0, max_per_tile: int = 600,
+                  n_threads: int = 6) -> pd.DataFrame:
+    """Download georeferenced occurrence records from the GBIF occurrence search API.
+
+    The area is split into `tile_deg` x `tile_deg` tiles and at most `max_per_tile` records are taken from
+    each. This keeps every request shallow (GBIF search gets very slow at deep page offsets) and stops
+    dense birding hotspots from dominating the sample; records are thinned to ~10 km later anyway.
+    """
+    match = _gbif_get(f"{GBIF_API}/species/match", {"name": species})
     if "usageKey" not in match:
         raise RuntimeError(f"GBIF could not match the species name '{species}'")
     taxon_key = match.get("acceptedUsageKey", match["usageKey"])
     log.info("GBIF taxon: %s (key %s)", match.get("scientificName"), taxon_key)
 
     min_lon, min_lat, max_lon, max_lat = bbox
-    params = {
-        "taxonKey": taxon_key,
-        "hasCoordinate": "true",
-        "hasGeospatialIssue": "false",
-        "occurrenceStatus": "PRESENT",
-        "decimalLongitude": f"{min_lon},{max_lon}",
-        "decimalLatitude": f"{min_lat},{max_lat}",
-        "limit": 300,
-    }
-    rows, offset = [], 0
-    while offset < max_records:
-        params["offset"] = offset
-        page = requests.get(f"{GBIF_API}/occurrence/search", params=params, timeout=120).json()
-        for r in page.get("results", []):
-            rows.append({
-                "lon": r.get("decimalLongitude"),
-                "lat": r.get("decimalLatitude"),
-                "year": r.get("year"),
-                "coordinateUncertaintyInMeters": r.get("coordinateUncertaintyInMeters"),
-                "basisOfRecord": r.get("basisOfRecord"),
-                "country": r.get("countryCode"),
-                "gbifID": r.get("key"),
-                "datasetKey": r.get("datasetKey"),
-            })
-        if page.get("endOfRecords", True):
-            break
-        offset += params["limit"]
-        if offset % 6000 == 0:
-            log.info("    ... %d of %s GBIF records", len(rows), page.get("count", "?"))
-    log.info("Downloaded %d GBIF records", len(rows))
-    return pd.DataFrame(rows)
+    lons = np.arange(min_lon, max_lon, tile_deg)
+    lats = np.arange(min_lat, max_lat, tile_deg)
+    tiles = [(x, y, min(x + tile_deg, max_lon), min(y + tile_deg, max_lat)) for x in lons for y in lats]
+
+    def fetch_tile(tile):
+        x0, y0, x1, y1 = tile
+        params = {
+            "taxonKey": taxon_key, "hasCoordinate": "true", "hasGeospatialIssue": "false",
+            "occurrenceStatus": "PRESENT", "limit": 300,
+            # half-open ranges so records on a tile edge are not fetched twice
+            "decimalLongitude": f"{x0},{x1 - 1e-7 if x1 < max_lon else x1}",
+            "decimalLatitude": f"{y0},{y1 - 1e-7 if y1 < max_lat else y1}",
+        }
+        rows, offset = [], 0
+        while offset < max_per_tile:
+            params["offset"] = offset
+            page = _gbif_get(f"{GBIF_API}/occurrence/search", params)
+            rows += [_gbif_record(r) for r in page.get("results", [])]
+            if page.get("endOfRecords", True):
+                break
+            offset += params["limit"]
+        return rows
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    rows, done = [], 0
+    with ThreadPoolExecutor(n_threads) as pool:
+        for tile_rows in pool.map(fetch_tile, tiles):
+            rows += tile_rows
+            done += 1
+            if done % 100 == 0:
+                log.info("    ... %d of %d tiles, %d records", done, len(tiles), len(rows))
+    df = pd.DataFrame(rows, columns=list(_gbif_record({}).keys()))
+    df = df.drop_duplicates(subset="gbifID")
+    log.info("Downloaded %d GBIF records from %d tiles", len(df), len(tiles))
+    return df
 
 
 def clean(df: pd.DataFrame, bbox, min_year=None, max_uncertainty_m=None) -> tuple[pd.DataFrame, dict]:
