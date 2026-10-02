@@ -62,7 +62,8 @@ def main(argv=None):
         (out / sub).mkdir(parents=True, exist_ok=True)
     cache = HERE / "data" / "cache"
     seed = cfg["model"]["random_seed"]
-    bbox = cfg["study_area"]["bbox"]
+    bbox = cfg["study_area"]["bbox"]  # area mapped and reported
+    train_bbox = cfg["study_area"].get("training_bbox") or bbox  # area the model is trained on
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S",
                         handlers=[logging.StreamHandler(sys.stdout),
@@ -72,21 +73,30 @@ def main(argv=None):
     log.info("STEP 1/8  Occurrence data")
     occ_cfg = cfg["occurrences"]
     occ_file = resolve(occ_cfg["file"], cfg_dir)
-    if occ_file and occ_file.exists():
-        raw = occurrences.read_occurrence_file(occ_file)
-        occ_source = f"user file {occ_file.name}"
-    elif occ_cfg.get("download_from_gbif_if_missing", True):
-        log.info("No occurrence file at %s - downloading from GBIF", occ_file)
-        raw = occurrences.download_gbif(cfg["species"]["name"], bbox, occ_cfg["gbif_max_records"])
-        occ_source = "GBIF occurrence API"
-        raw.to_csv(out / "tables" / "gbif_raw_download.csv", index=False)
-    else:
+    have_file = bool(occ_file and occ_file.exists())
+    if not have_file and not occ_cfg.get("download_from_gbif_if_missing", True):
         raise FileNotFoundError(f"Occurrence file not found: {occ_file}")
-    cleaned, steps = occurrences.clean(raw, bbox, occ_cfg.get("min_year"), occ_cfg.get("max_coord_uncertainty_m"))
+    sources = []
+    if have_file:
+        user = occurrences.read_occurrence_file(occ_file).assign(source="user file")
+        sources.append(user)
+    if not have_file or occ_cfg.get("gbif_supplement", False):
+        log.info("Downloading GBIF records for the training area %s", train_bbox)
+        gbif = occurrences.download_gbif(cfg["species"]["name"], train_bbox, occ_cfg["gbif_max_records"])
+        gbif.to_csv(out / "tables" / "gbif_raw_download.csv", index=False)
+        if have_file and "gbifID" in user.columns:  # records already in the user's file
+            gbif = gbif[~gbif["gbifID"].astype(str).isin(user["gbifID"].astype(str))]
+        sources.append(gbif.assign(source="GBIF"))
+    raw = pd.concat(sources, ignore_index=True)
+    occ_source = " + ".join(
+        f"{'user file ' + occ_file.name if src == 'user file' else 'GBIF'} ({n:,})"
+        for src, n in raw["source"].value_counts(sort=False).items())
+    cleaned, steps = occurrences.clean(raw, train_bbox, occ_cfg.get("min_year"),
+                                       occ_cfg.get("max_coord_uncertainty_m"))
 
     # 2. Environment ----------------------------------------------------------------------
     log.info("STEP 2/8  Environmental layers")
-    layers, template = env.load_layers(cfg, cache)
+    layers, template = env.load_layers(cfg, cache, train_bbox)
     all_vars = list(layers)
     valid_all = ~np.isnan(np.stack([layers[v] for v in all_vars])).any(axis=0)
 
@@ -164,10 +174,21 @@ def main(argv=None):
     if cfg["study_area"].get("boundaries_file"):
         import geopandas as gpd
         boundaries = gpd.read_file(resolve(cfg["study_area"]["boundaries_file"], cfg_dir)).to_crs("EPSG:4326")
-    area = cell_area_km2(template)
     thr_key = "max_tss (max sensitivity + specificity)"
     thr = thresholds[thr_key]
-    current = modeling.predict_grid(model, layers, variables)
+    name = cfg["species"]["name"]
+    current_full = modeling.predict_grid(model, layers, variables)
+    if train_bbox != bbox:
+        # range-wide map from the training extent, then everything below is for the study area only
+        env.write_raster(out / "rasters" / "suitability_training_range.tif", current_full, template)
+        plots.suitability_map(out / "figures" / "suitability_range.png", current_full, template, pres,
+                              f"{name} – habitat suitability, training range (current)", boundaries)
+    train_template = template
+    win, template = env.subgrid(train_template, bbox)
+    current = current_full[win]
+    area = cell_area_km2(template)
+    in_bbox = pres["lon"].between(bbox[0], bbox[2]) & pres["lat"].between(bbox[1], bbox[3])
+    pres_map = pres[in_bbox]
     binary = np.where(np.isnan(current), np.nan, (current >= thr).astype("float32"))
     suitable_km2 = float(np.nansum(area * (binary == 1)))
     env.write_raster(out / "rasters" / "suitability_current.tif", current, template)
@@ -175,11 +196,11 @@ def main(argv=None):
     p10 = thresholds["10th_percentile_training_presence"]
     env.write_raster(out / "rasters" / "binary_current_p10.tif",
                      np.where(np.isnan(current), np.nan, (current >= p10).astype("float32")), template)
-    name = cfg["species"]["name"]
-    plots.occurrence_map(out / "figures" / "occurrences.png", cleaned, pres, template, layers[all_vars[0]], bg)
-    plots.suitability_map(out / "figures" / "suitability_current.png", current, template, pres,
+    plots.occurrence_map(out / "figures" / "occurrences.png", cleaned, pres, train_template,
+                         layers[all_vars[0]], bg)
+    plots.suitability_map(out / "figures" / "suitability_current.png", current, template, pres_map,
                           f"{name} – habitat suitability (current)", boundaries)
-    plots.binary_map(out / "figures" / "binary_current.png", binary, template, pres,
+    plots.binary_map(out / "figures" / "binary_current.png", binary, template, pres_map,
                      f"{name} – suitable habitat (max-TSS threshold)", thr, boundaries)
     log.info("    suitable area: %.0f km²", suitable_km2)
 
@@ -200,7 +221,7 @@ def main(argv=None):
         figures = ["suitability", "change", "mess"]
         if agreement is not None:
             env.write_raster(out / "rasters" / f"agreement_{tag}.tif", agreement, template)
-            plots.agreement_map(out / "figures" / f"agreement_{tag}.png", agreement, n_models, template, pres,
+            plots.agreement_map(out / "figures" / f"agreement_{tag}.png", agreement, n_models, template, pres_map,
                                 f"Model agreement on suitable habitat, SSP{info['ssp']} {info['period']}")
             figures.append("agreement")
         fut_km2 = float(np.nansum(area * (fut_bin == 1)))
@@ -258,7 +279,7 @@ def main(argv=None):
         "cfg": cfg, "best": best, "metrics": metrics, "thresholds": thresholds, "n_presences": len(pres),
         "n_background": len(bg), "cleaning_steps": steps, "variables": variables, "removed": removed,
         "tuning": tuning, "importance": importance, "suitable_area_km2": suitable_km2, "future": future,
-        "occ_source": occ_source,
+        "occ_source": occ_source, "train_bbox": train_bbox,
     })
     log.info("Done. Report: %s", path)
     return summary

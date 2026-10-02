@@ -12,15 +12,20 @@ occurrences:
   # If the file does not exist, records are downloaded from GBIF instead.
   file: "data/occurrences/occurrences.csv"
   download_from_gbif_if_missing: true
-  gbif_max_records: 20000
+  gbif_supplement: true        # also add GBIF records from the whole training area to your file (duplicates removed)
+  gbif_max_records: 60000
   min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
   max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
-  thin_km: 5                   # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
+  thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
 
 study_area:
-  # Bounding box [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
-  # Widen it (e.g. [34, 22, 70, 40]) to model the whole species range.
+  # Area MAPPED and reported, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
   bbox: [37.5, 28.5, 49.5, 38.0]
+  # Area the model is TRAINED on. Default: the whole native range of the white-eared bulbul
+  # (SE Turkey and the Levant to Iran, the Gulf, Pakistan and NW India), so the model learns the full
+  # climatic niche, including conditions hotter than Iraq today. Maps and areas are still reported for `bbox`.
+  # null = train on `bbox` only.
+  training_bbox: [34.0, 20.0, 78.0, 40.0]
   # Optional country/province outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
   boundaries_file: null
 
@@ -35,7 +40,7 @@ environment:
   keep_variables: [bio_1, bio_12]  # never removed by the collinearity filter (ecologically key); [] = purely statistical
 
 background:
-  n_points: 10000
+  n_points: 20000
   buffer_km: 300               # sample background within this distance of presences (accessible area); null = whole bbox
 
 model:

@@ -79,9 +79,9 @@ def _crop(src, bbox, template=None):
     return data.astype("float32").filled(np.nan), profile
 
 
-def load_layers(cfg: dict, cache_dir: Path) -> tuple[dict[str, np.ndarray], dict]:
-    """Return {variable: 2-D array} cropped to the study area and the shared grid profile."""
-    env_cfg, bbox = cfg["environment"], cfg["study_area"]["bbox"]
+def load_layers(cfg: dict, cache_dir: Path, bbox=None) -> tuple[dict[str, np.ndarray], dict]:
+    """Return {variable: 2-D array} cropped to `bbox` (default: the study area) and the grid profile."""
+    env_cfg, bbox = cfg["environment"], bbox or cfg["study_area"]["bbox"]
     if env_cfg["source"] == "local":
         folder = Path(env_cfg["local_dir"])
         paths = sorted(str(p) for p in folder.glob("*.tif"))
@@ -145,6 +145,18 @@ def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: li
         log.info("Using cached %s", crop.name)
     with rasterio.open(crop) as src:
         return {var: src.read(int(var.split("_")[1])) for var in variables}
+
+
+def subgrid(template: dict, bbox) -> tuple[tuple[slice, slice], dict]:
+    """Array slices and grid profile of the part of `template` covered by `bbox`."""
+    win = from_bounds(*bbox, transform=template["transform"]).round_offsets().round_lengths()
+    r0, c0 = max(int(win.row_off), 0), max(int(win.col_off), 0)
+    r1 = min(int(win.row_off + win.height), template["height"])
+    c1 = min(int(win.col_off + win.width), template["width"])
+    sub = {"crs": template["crs"], "width": c1 - c0, "height": r1 - r0,
+           "transform": rasterio.windows.transform(rasterio.windows.Window(c0, r0, c1 - c0, r1 - r0),
+                                                   template["transform"])}
+    return (slice(r0, r1), slice(c0, c1)), sub
 
 
 def write_raster(path: Path, data: np.ndarray, template: dict, nodata=-9999.0):

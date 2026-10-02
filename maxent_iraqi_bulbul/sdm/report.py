@@ -91,6 +91,13 @@ def build(out: Path, ctx: dict) -> Path:
     metrics_table = pd.DataFrame([(METRIC_LABELS.get(k, k), float(v)) for k, v in m.items()], columns=["Metric", "Value"])
     thresholds = pd.DataFrame(list(ctx["thresholds"].items()), columns=["Threshold rule", "Cloglog value"])
 
+    range_html = ""
+    if (fig / "suitability_range.png").exists() and list(ctx["train_bbox"]) != list(cfg["study_area"]["bbox"]):
+        range_html = f"""<p>The model was trained across the species' range ({ctx['train_bbox']}) so that it learns the
+full climatic niche, including conditions hotter or drier than in the mapped area. The range-wide prediction is shown
+first; all maps, areas and future projections below are for the mapped area {cfg['study_area']['bbox']}.</p>
+{_img(fig / 'suitability_range.png')}"""
+
     future_html = ""
     if ctx.get("future"):
         fut = ctx["future"]
@@ -122,7 +129,7 @@ and include a map of how many models predict suitable habitat in each cell.</p>
 <title>MaxEnt – {html.escape(cfg['species']['name'])}</title><style>{CSS}</style></head><body>
 <h1>Habitat suitability model – <i>{html.escape(cfg['species']['name'])}</i></h1>
 <p class="sub">MaxEnt species distribution model · generated {datetime.now():%Y-%m-%d %H:%M} ·
-study area {cfg['study_area']['bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
+mapped area {cfg['study_area']['bbox']} · training area {ctx['train_bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
 <div class="tiles">{tiles_html}</div>
 
 <h2>1. Occurrence data</h2>
@@ -161,6 +168,7 @@ honest measure of transferability. Boyce index ranges −1 to 1; positive values
 {_img(fig / 'response_curves.png')}
 
 <h2>6. Habitat suitability – current climate</h2>
+{range_html}
 {_img(fig / 'suitability_current.png')}
 {_img(fig / 'binary_current.png')}
 {future_html}
