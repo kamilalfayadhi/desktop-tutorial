@@ -90,30 +90,43 @@ def auc(p_pres, p_bg):
     return roc_auc_score(y, np.r_[p_pres, p_bg])
 
 
-def tune(x_pres, x_bg, pres_folds, bg_folds, feature_classes, rms, seed) -> pd.DataFrame:
-    """Evaluate every feature-class x regularization-multiplier combination with cross-validation."""
-    results = []
-    for features, rm in itertools.product(feature_classes, rms):
-        fold_stats = []
-        for k in np.unique(pres_folds):
-            tr_p, te_p = pres_folds != k, pres_folds == k
-            tr_b, te_b = bg_folds != k, bg_folds == k
-            if te_p.sum() == 0 or te_b.sum() == 0:
-                continue
-            m = fit(make_model(features, rm, seed), x_pres[tr_p], x_bg[tr_b])
-            p_trp, p_trb = predict(m, x_pres[tr_p]), predict(m, x_bg[tr_b])
-            p_tep, p_teb = predict(m, x_pres[te_p]), predict(m, x_bg[te_b])
-            train_auc, test_auc = auc(p_trp, p_trb), auc(p_tep, p_teb)
-            or10 = np.mean(p_tep < np.percentile(p_trp, 10))
-            fold_stats.append((train_auc, test_auc, train_auc - test_auc, or10))
-        s = np.array(fold_stats)
-        results.append({
-            "features": features, "rm": rm,
-            "train_auc": s[:, 0].mean(), "test_auc": s[:, 1].mean(), "test_auc_sd": s[:, 1].std(),
-            "auc_diff": s[:, 2].mean(), "or10": s[:, 3].mean(),
-        })
+def _evaluate_setting(features, rm, x_pres, x_bg, pres_folds, bg_folds, seed) -> dict:
+    """Cross-validate one feature-class / regularization-multiplier setting."""
+    fold_stats = []
+    for k in np.unique(pres_folds):
+        tr_p, te_p = pres_folds != k, pres_folds == k
+        tr_b, te_b = bg_folds != k, bg_folds == k
+        if te_p.sum() == 0 or te_b.sum() == 0:
+            continue
+        m = fit(make_model(features, rm, seed), x_pres[tr_p], x_bg[tr_b])
+        p_trp, p_trb = predict(m, x_pres[tr_p]), predict(m, x_bg[tr_b])
+        p_tep, p_teb = predict(m, x_pres[te_p]), predict(m, x_bg[te_b])
+        train_auc, test_auc = auc(p_trp, p_trb), auc(p_tep, p_teb)
+        or10 = np.mean(p_tep < np.percentile(p_trp, 10))
+        fold_stats.append((train_auc, test_auc, train_auc - test_auc, or10))
+    s = np.array(fold_stats)
+    return {
+        "features": features, "rm": rm,
+        "train_auc": s[:, 0].mean(), "test_auc": s[:, 1].mean(), "test_auc_sd": s[:, 1].std(),
+        "auc_diff": s[:, 2].mean(), "or10": s[:, 3].mean(),
+    }
+
+
+def tune(x_pres, x_bg, pres_folds, bg_folds, feature_classes, rms, seed, n_jobs=-1) -> pd.DataFrame:
+    """Evaluate every feature-class x regularization-multiplier combination with cross-validation.
+
+    Settings are evaluated in parallel (`n_jobs` processes, -1 = all CPU cores).
+    """
+    from joblib import Parallel, delayed
+
+    settings = list(itertools.product(feature_classes, rms))
+    log.info("    %d settings x %d folds on %d presences / %d background points",
+             len(settings), len(np.unique(pres_folds)), len(x_pres), len(x_bg))
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_evaluate_setting)(f, rm, x_pres, x_bg, pres_folds, bg_folds, seed) for f, rm in settings)
+    for r in results:
         log.info("  %-32s rm=%-4s test AUC=%.3f  AUC diff=%.3f  OR10=%.3f",
-                 features, rm, results[-1]["test_auc"], results[-1]["auc_diff"], results[-1]["or10"])
+                 r["features"], r["rm"], r["test_auc"], r["auc_diff"], r["or10"])
     return pd.DataFrame(results)
 
 

@@ -99,6 +99,8 @@ def download_gbif(species: str, bbox, max_records: int) -> pd.DataFrame:
         if page.get("endOfRecords", True):
             break
         offset += params["limit"]
+        if offset % 6000 == 0:
+            log.info("    ... %d of %s GBIF records", len(rows), page.get("count", "?"))
     log.info("Downloaded %d GBIF records", len(rows))
     return pd.DataFrame(rows)
 
@@ -140,24 +142,20 @@ def clean(df: pd.DataFrame, bbox, min_year=None, max_uncertainty_m=None) -> tupl
     return df.reset_index(drop=True), steps
 
 
-def haversine_km(lon1, lat1, lon2, lat2):
-    lon1, lat1, lon2, lat2 = map(np.radians, (lon1, lat1, lon2, lat2))
-    a = np.sin((lat2 - lat1) / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2
-    return 6371.0 * 2 * np.arcsin(np.sqrt(a))
-
-
 def thin(df: pd.DataFrame, distance_km: float, seed: int = 42) -> pd.DataFrame:
     """Greedy random spatial thinning: no two kept points closer than `distance_km`."""
     if not distance_km or len(df) < 2:
         return df
+    from sklearn.neighbors import BallTree
+
     rng = np.random.default_rng(seed)
-    order = rng.permutation(len(df))
-    lon, lat = df["lon"].to_numpy(), df["lat"].to_numpy()
-    kept: list[int] = []
-    for i in order:
-        if kept:
-            d = haversine_km(lon[i], lat[i], lon[kept], lat[kept])
-            if d.min() < distance_km:
-                continue
+    coords = np.radians(df[["lat", "lon"]].to_numpy())
+    neighbours = BallTree(coords, metric="haversine").query_radius(coords, r=distance_km / 6371.0)
+    removed = np.zeros(len(df), dtype=bool)
+    kept = []
+    for i in rng.permutation(len(df)):
+        if removed[i]:
+            continue
         kept.append(i)
+        removed[neighbours[i]] = True
     return df.iloc[sorted(kept)].reset_index(drop=True)
