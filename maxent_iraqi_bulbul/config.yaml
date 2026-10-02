@@ -1,0 +1,56 @@
+# Configuration for the automated MaxEnt pipeline (Iraqi bulbul).
+# Every setting can be left as-is; the pipeline runs end-to-end with the defaults.
+
+species:
+  # The "Iraqi bulbul" is the white-eared bulbul, Pycnonotus leucotis
+  # (subspecies P. l. mesopotamia occurs in Iraq). Change if you use another name.
+  name: "Pycnonotus leucotis"
+
+occurrences:
+  # Path to YOUR occurrence file (CSV / TSV / XLSX). Longitude/latitude columns are
+  # detected automatically (e.g. lon/lat, longitude/latitude, x/y, decimalLongitude...).
+  # If the file does not exist, records are downloaded from GBIF instead.
+  file: "data/occurrences/occurrences.csv"
+  download_from_gbif_if_missing: true
+  gbif_max_records: 20000
+  min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
+  max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
+  thin_km: 5                   # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
+
+study_area:
+  # Bounding box [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
+  # Widen it (e.g. [34, 22, 70, 40]) to model the whole species range.
+  bbox: [37.5, 28.5, 49.5, 38.0]
+  # Optional country/province outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
+  boundaries_file: null
+
+environment:
+  source: "worldclim"          # "worldclim" (auto-download) or "local"
+  resolution: "2.5m"           # WorldClim 2.1: 10m, 5m, 2.5m or 30s
+  local_dir: null              # folder of GeoTIFFs when source = "local" (one variable per file)
+  variables: "all"             # "all" or a list such as [bio_1, bio_4, bio_12, bio_15]
+  # Collinearity filtering (applied to background environment):
+  vif_threshold: 10            # drop variables until every VIF is below this
+  correlation_threshold: 0.7   # then drop one of each remaining pair with |r| above this
+  keep_variables: [bio_1, bio_12]  # never removed by the collinearity filter (ecologically key); [] = purely statistical
+
+background:
+  n_points: 10000
+  buffer_km: 300               # sample background within this distance of presences (accessible area); null = whole bbox
+
+model:
+  # Candidate settings evaluated with spatial-block cross-validation; the best is refit on all data.
+  feature_classes: ["linear", "linear,quadratic", "linear,quadratic,hinge", "linear,quadratic,product", "linear,quadratic,hinge,product"]
+  regularization_multipliers: [0.5, 1, 1.5, 2, 3, 4]
+  cv_method: "block"           # "block" (4 spatial blocks, ENMeval-style) or "random" (5-fold)
+  selection_metric: "test_auc"  # "test_auc" (mean CV AUC) or "auc_diff" (lowest overfitting, AUC as tiebreak)
+  random_seed: 42
+
+future:
+  # Optional projection to future climate (WorldClim 2.1 CMIP6, auto-downloaded).
+  enabled: false
+  gcm: "MPI-ESM1-2-HR"
+  ssp: "585"                   # 126, 245, 370 or 585
+  period: "2041-2060"          # 2021-2040, 2041-2060, 2061-2080, 2081-2100
+
+output_dir: "outputs"

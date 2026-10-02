@@ -1,0 +1,11 @@
+elapid>=1.0
+numpy
+pandas
+scipy
+scikit-learn
+rasterio
+geopandas
+matplotlib
+pyyaml
+requests
+openpyxl
