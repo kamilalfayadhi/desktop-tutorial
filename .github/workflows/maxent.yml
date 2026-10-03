@@ -8,6 +8,7 @@ on:
     paths:
       - "maxent_iraqi_bulbul/**"
       - "!maxent_iraqi_bulbul/outputs/**"
+      - "!maxent_iraqi_bulbul/article/**"
       - ".github/workflows/maxent.yml"
 
 permissions:
