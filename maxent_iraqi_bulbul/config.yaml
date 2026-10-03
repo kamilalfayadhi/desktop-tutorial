@@ -12,16 +12,33 @@ occurrences:
   # If the file does not exist, records are downloaded from GBIF instead.
   file: "data/occurrences/occurrences.csv"
   download_from_gbif_if_missing: true
-  gbif_max_records: 20000
+  gbif_supplement: true        # also add GBIF records from the whole training area to your file (duplicates removed)
+  gbif_tile_deg: 1.0           # GBIF is queried per tile of this size (degrees) ...
+  gbif_max_per_tile: 600       # ... taking at most this many records per tile (limits hotspot bias)
+  gbif_cache_days: 30          # reuse a downloaded GBIF query for this many days (0 = always re-download)
   min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
   max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
-  thin_km: 5                   # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
+  thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
+  # Records inside these provinces of study_area.country are removed (from your file and from GBIF).
+  # Names as in Natural Earth admin-1. Default: northern Iraq = Kurdistan Region (Dihok, Arbil,
+  # As-Sulaymaniyah) + Ninawa (Nineveh) + At-Ta'mim (Kirkuk). [] = keep all records.
+  exclude_provinces: ["Dihok", "Arbil", "As-Sulaymaniyah", "Ninawa", "At-Ta'mim"]
 
 study_area:
-  # Bounding box [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
-  # Widen it (e.g. [34, 22, 70, 40]) to model the whole species range.
+  # Area MAPPED, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.
   bbox: [37.5, 28.5, 49.5, 38.0]
-  # Optional country/province outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
+  # Area the model is TRAINED on. Default: the western part of the white-eared bulbul's range (SE Turkey and
+  # the Levant, Iraq, Iran, Arabia and the Gulf, Afghanistan and western Pakistan). It includes climates hotter
+  # than Iraq today, which future projections need, but leaves out the Indian subcontinent: its many records and
+  # monsoon climate dominated a whole-range model and fitted Iraq poorly ([34, 20, 78, 40] = whole range).
+  # Maps and areas are still reported for `bbox`. null = train on `bbox` only.
+  training_bbox: [34.0, 20.0, 64.0, 40.0]
+  # Country whose border and provinces are drawn on every map (ISO3 code, Natural Earth 1:10m outlines).
+  country: "IRQ"
+  clip_to_country: true        # maps, rasters and suitable areas cover only the country (null country = whole bbox)
+  show_provinces: true         # draw governorate boundaries
+  show_country_borders: true   # draw neighbouring countries' borders
+  # Optional extra outlines drawn on the maps (any shapefile / GeoJSON / GeoPackage).
   boundaries_file: null
 
 environment:
@@ -32,10 +49,16 @@ environment:
   # Collinearity filtering (applied to background environment):
   vif_threshold: 10            # drop variables until every VIF is below this
   correlation_threshold: 0.7   # then drop one of each remaining pair with |r| above this
-  keep_variables: [bio_1, bio_12]  # never removed by the collinearity filter (ecologically key); [] = purely statistical
+  keep_variables: [bio_1, bio_12, dist_river_km, lc_tree, lc_cropland, lc_built]  # never removed by the collinearity filter
+  # Non-climate predictors (held constant in future projections):
+  extra_layers:
+    river_distance: true       # km to the nearest major river (Natural Earth 1:10m centre-lines)
+    river_distance_cap_km: 50  # distances beyond this are set to this value (river effect is local); null = no cap
+    landcover: [tree, cropland, built]  # cell fractions from ESA WorldCover 2021; also: shrub, grass, bare, water, wetland
+    landcover_overview_level: 3  # WorldCover is read at 10 m x 2^(level+1) (3 = ~160 m) before averaging
 
 background:
-  n_points: 10000
+  n_points: 20000
   buffer_km: 300               # sample background within this distance of presences (accessible area); null = whole bbox
 
 model:
@@ -43,14 +66,19 @@ model:
   feature_classes: ["linear", "linear,quadratic", "linear,quadratic,hinge", "linear,quadratic,product", "linear,quadratic,hinge,product"]
   regularization_multipliers: [0.5, 1, 1.5, 2, 3, 4]
   cv_method: "block"           # "block" (4 spatial blocks, ENMeval-style) or "random" (5-fold)
-  selection_metric: "test_auc"  # "test_auc" (mean CV AUC) or "auc_diff" (lowest overfitting, AUC as tiebreak)
+  # "auc_then_or10": among models within auc_tolerance of the best CV AUC, lowest omission rate (OR10),
+  #                  then strongest regularization. "test_auc": highest CV AUC. "auc_diff": least overfitting.
+  selection_metric: "auc_then_or10"
+  auc_tolerance: 0.005
   random_seed: 42
 
 future:
   # Optional projection to future climate (WorldClim 2.1 CMIP6, auto-downloaded).
-  enabled: false
-  gcm: "MPI-ESM1-2-HR"
-  ssp: "585"                   # 126, 245, 370 or 585
-  period: "2041-2060"          # 2021-2040, 2041-2060, 2061-2080, 2081-2100
+  enabled: true
+  # Every combination of the listed GCMs, SSPs and periods is projected.
+  gcms: ["MPI-ESM1-2-HR", "UKESM1-0-LL"]
+  ssps: ["245", "585"]         # 126, 245, 370, 585
+  periods: ["2041-2060", "2061-2080"]  # 2021-2040, 2041-2060, 2061-2080, 2081-2100
+  ensemble: true               # also average the GCMs for each SSP x period (needs 2+ GCMs)
 
 output_dir: "outputs"

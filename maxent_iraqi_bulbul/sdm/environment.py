@@ -33,7 +33,8 @@ BIOCLIM_NAMES = {
 
 
 def describe(var: str) -> str:
-    return BIOCLIM_NAMES.get(var, var)
+    from .extra_layers import DESCRIPTIONS
+    return BIOCLIM_NAMES.get(var) or DESCRIPTIONS.get(var, var)
 
 
 def _download(url: str, dest: Path) -> Path:
@@ -79,9 +80,9 @@ def _crop(src, bbox, template=None):
     return data.astype("float32").filled(np.nan), profile
 
 
-def load_layers(cfg: dict, cache_dir: Path) -> tuple[dict[str, np.ndarray], dict]:
-    """Return {variable: 2-D array} cropped to the study area and the shared grid profile."""
-    env_cfg, bbox = cfg["environment"], cfg["study_area"]["bbox"]
+def load_layers(cfg: dict, cache_dir: Path, bbox=None) -> tuple[dict[str, np.ndarray], dict]:
+    """Return {variable: 2-D array} cropped to `bbox` (default: the study area) and the grid profile."""
+    env_cfg, bbox = cfg["environment"], bbox or cfg["study_area"]["bbox"]
     if env_cfg["source"] == "local":
         folder = Path(env_cfg["local_dir"])
         paths = sorted(str(p) for p in folder.glob("*.tif"))
@@ -107,18 +108,56 @@ def load_layers(cfg: dict, cache_dir: Path) -> tuple[dict[str, np.ndarray], dict
     return layers, template
 
 
-def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: list[str]) -> dict[str, np.ndarray]:
-    """Download a WorldClim CMIP6 multi-band bioclim GeoTIFF and warp it onto the current grid."""
-    fut, res = cfg["future"], cfg["environment"]["resolution"]
-    url = WORLDCLIM_FUTURE.format(res=res, gcm=fut["gcm"], ssp=fut["ssp"], period=fut["period"])
-    path = _download(url, cache_dir / Path(url).name)
-    out = {}
-    with rasterio.open(path) as src, WarpedVRT(src, crs=template["crs"], transform=template["transform"],
-                                                width=template["width"], height=template["height"]) as vrt:
-        for var in variables:
-            band = int(var.split("_")[1])
-            out[var] = vrt.read(band, masked=True).astype("float32").filled(np.nan)
-    return out
+def future_scenarios(fut_cfg: dict) -> list[dict]:
+    """All GCM x SSP x period combinations from the `future` config (scalars or lists accepted)."""
+    def as_list(*keys):
+        for k in keys:
+            if fut_cfg.get(k) is not None:
+                v = fut_cfg[k]
+                return [str(x) for x in (v if isinstance(v, list) else [v])]
+        return []
+    return [{"gcm": g, "ssp": s, "period": p}
+            for g in as_list("gcms", "gcm") for s in as_list("ssps", "ssp") for p in as_list("periods", "period")]
+
+
+def load_future_layers(cfg: dict, cache_dir: Path, template: dict, variables: list[str],
+                       scenario: dict) -> dict[str, np.ndarray]:
+    """Download a WorldClim CMIP6 multi-band bioclim GeoTIFF and warp it onto the current grid.
+
+    Only a cut-out of all 19 bands on the study-area grid is kept in the cache; the global file
+    (often 1 GB or more) is deleted after use, so many scenarios fit on disk.
+    """
+    res = cfg["environment"]["resolution"]
+    url = WORLDCLIM_FUTURE.format(res=res, **scenario)
+    bounds = rasterio.transform.array_bounds(template["height"], template["width"], template["transform"])
+    key = "_".join(f"{b:.4f}" for b in bounds)
+    crop = cache_dir / f"{Path(url).stem}_crop_{key}.tif"
+    if not crop.exists():
+        path = _download(url, cache_dir / Path(url).name)
+        with rasterio.open(path) as src, WarpedVRT(src, crs=template["crs"], transform=template["transform"],
+                                                    width=template["width"], height=template["height"]) as vrt:
+            data = vrt.read(masked=True).astype("float32").filled(np.nan)
+        with rasterio.open(crop, "w", driver="GTiff", height=template["height"], width=template["width"],
+                           count=data.shape[0], dtype="float32", crs=template["crs"],
+                           transform=template["transform"], nodata=np.nan, compress="deflate") as dst:
+            dst.write(data)
+        path.unlink()
+    else:
+        log.info("Using cached %s", crop.name)
+    with rasterio.open(crop) as src:
+        return {var: src.read(int(var.split("_")[1])) for var in variables}
+
+
+def subgrid(template: dict, bbox) -> tuple[tuple[slice, slice], dict]:
+    """Array slices and grid profile of the part of `template` covered by `bbox`."""
+    win = from_bounds(*bbox, transform=template["transform"]).round_offsets().round_lengths()
+    r0, c0 = max(int(win.row_off), 0), max(int(win.col_off), 0)
+    r1 = min(int(win.row_off + win.height), template["height"])
+    c1 = min(int(win.col_off + win.width), template["width"])
+    sub = {"crs": template["crs"], "width": c1 - c0, "height": r1 - r0,
+           "transform": rasterio.windows.transform(rasterio.windows.Window(c0, r0, c1 - c0, r1 - r0),
+                                                   template["transform"])}
+    return (slice(r0, r1), slice(c0, c1)), sub
 
 
 def write_raster(path: Path, data: np.ndarray, template: dict, nodata=-9999.0):

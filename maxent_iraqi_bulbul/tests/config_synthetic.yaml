@@ -4,7 +4,8 @@ species:
 occurrences:
   file: "synthetic/occurrences.csv"
   download_from_gbif_if_missing: false
-  gbif_max_records: 0
+  gbif_tile_deg: 1.0
+  gbif_max_per_tile: 600
   min_year: 1970
   max_coord_uncertainty_m: 10000
   thin_km: 5

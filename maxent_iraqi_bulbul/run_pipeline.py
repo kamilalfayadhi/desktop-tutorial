@@ -23,7 +23,8 @@ import rasterio
 import yaml
 
 from sdm import environment as env
-from sdm import modeling, occurrences, plots, report
+from sdm import boundaries as bnd
+from sdm import extra_layers, modeling, occurrences, plots, report
 
 HERE = Path(__file__).resolve().parent
 log = logging.getLogger("maxent")
@@ -53,6 +54,8 @@ def main(argv=None):
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     cfg_dir = Path(args.config).resolve().parent
+    if cfg["study_area"].get("boundaries_file"):
+        cfg["study_area"]["boundaries_file"] = str(resolve(cfg["study_area"]["boundaries_file"], cfg_dir))
     if cfg["environment"].get("local_dir"):
         cfg["environment"]["local_dir"] = str(resolve(cfg["environment"]["local_dir"], cfg_dir))
     if args.occurrences:
@@ -62,7 +65,8 @@ def main(argv=None):
         (out / sub).mkdir(parents=True, exist_ok=True)
     cache = HERE / "data" / "cache"
     seed = cfg["model"]["random_seed"]
-    bbox = cfg["study_area"]["bbox"]
+    bbox = cfg["study_area"]["bbox"]  # area mapped and reported
+    train_bbox = cfg["study_area"].get("training_bbox") or bbox  # area the model is trained on
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s", datefmt="%H:%M:%S",
                         handlers=[logging.StreamHandler(sys.stdout),
@@ -72,21 +76,42 @@ def main(argv=None):
     log.info("STEP 1/8  Occurrence data")
     occ_cfg = cfg["occurrences"]
     occ_file = resolve(occ_cfg["file"], cfg_dir)
-    if occ_file and occ_file.exists():
-        raw = occurrences.read_occurrence_file(occ_file)
-        occ_source = f"user file {occ_file.name}"
-    elif occ_cfg.get("download_from_gbif_if_missing", True):
-        log.info("No occurrence file at %s - downloading from GBIF", occ_file)
-        raw = occurrences.download_gbif(cfg["species"]["name"], bbox, occ_cfg["gbif_max_records"])
-        occ_source = "GBIF occurrence API"
-        raw.to_csv(out / "tables" / "gbif_raw_download.csv", index=False)
-    else:
+    have_file = bool(occ_file and occ_file.exists())
+    if not have_file and not occ_cfg.get("download_from_gbif_if_missing", True):
         raise FileNotFoundError(f"Occurrence file not found: {occ_file}")
-    cleaned, steps = occurrences.clean(raw, bbox, occ_cfg.get("min_year"), occ_cfg.get("max_coord_uncertainty_m"))
+    sources = []
+    if have_file:
+        user = occurrences.read_occurrence_file(occ_file).assign(source="user file")
+        sources.append(user)
+    if not have_file or occ_cfg.get("gbif_supplement", False):
+        log.info("Downloading GBIF records for the training area %s", train_bbox)
+        gbif = occurrences.cached_gbif(cache, occ_cfg.get("gbif_cache_days", 30), cfg["species"]["name"],
+                                       train_bbox, occ_cfg.get("gbif_tile_deg", 1.0),
+                                       occ_cfg.get("gbif_max_per_tile", 600))
+        gbif.to_csv(out / "tables" / "gbif_raw_download.csv", index=False)
+        if have_file and "gbifID" in user.columns:  # records already in the user's file
+            gbif = gbif[~gbif["gbifID"].astype(str).isin(user["gbifID"].astype(str))]
+        sources.append(gbif.assign(source="GBIF"))
+    raw = pd.concat(sources, ignore_index=True)
+    occ_source = " + ".join(
+        f"{'user file ' + occ_file.name if src == 'user file' else 'GBIF'} ({n:,})"
+        for src, n in raw["source"].value_counts(sort=False).items())
+    cleaned, steps = occurrences.clean(raw, train_bbox, occ_cfg.get("min_year"),
+                                       occ_cfg.get("max_coord_uncertainty_m"))
+    excluded = occ_cfg.get("exclude_provinces") or []
+    if excluded:
+        import geopandas as gpd
+        area_out = bnd.provinces(cache, cfg["study_area"].get("country") or "IRQ", excluded).union_all()
+        pts = gpd.GeoSeries(gpd.points_from_xy(cleaned["lon"], cleaned["lat"]), crs="EPSG:4326")
+        drop = pts.within(area_out).to_numpy()
+        log.info("Removing %d records inside the excluded provinces: %s", int(drop.sum()), ", ".join(excluded))
+        cleaned = cleaned[~drop].reset_index(drop=True)
+        steps["outside_excluded_provinces"] = len(cleaned)
 
     # 2. Environment ----------------------------------------------------------------------
     log.info("STEP 2/8  Environmental layers")
-    layers, template = env.load_layers(cfg, cache)
+    layers, template = env.load_layers(cfg, cache, train_bbox)
+    layers.update(extra_layers.load(cfg, template, cache))  # distance to rivers, land cover (static)
     all_vars = list(layers)
     valid_all = ~np.isnan(np.stack([layers[v] for v in all_vars])).any(axis=0)
 
@@ -135,7 +160,8 @@ def main(argv=None):
     tuning = modeling.tune(x_pres, x_bg, pf, bf, cfg["model"]["feature_classes"],
                            cfg["model"]["regularization_multipliers"], seed)
     tuning.to_csv(out / "tables" / "tuning_results.csv", index=False)
-    best = modeling.choose_best(tuning, cfg["model"].get("selection_metric", "test_auc"))
+    best = modeling.choose_best(tuning, cfg["model"].get("selection_metric", "test_auc"),
+                                cfg["model"].get("auc_tolerance", 0.005))
     log.info("    selected: features=%s rm=%s (test AUC %.3f)", best["features"], best["rm"], best["test_auc"])
     plots.tuning_plot(out / "figures" / "tuning.png", tuning, best)
 
@@ -159,14 +185,35 @@ def main(argv=None):
 
     # 7. Prediction maps ------------------------------------------------------------------
     log.info("STEP 7/8  Prediction maps")
-    boundaries = None
-    if cfg["study_area"].get("boundaries_file"):
-        import geopandas as gpd
-        boundaries = gpd.read_file(resolve(cfg["study_area"]["boundaries_file"], cfg_dir)).to_crs("EPSG:4326")
-    area = cell_area_km2(template)
+    boundaries = bnd.load(cfg, cache, bbox)  # outlines for the study-area maps
+    range_boundaries = {k: v for k, v in bnd.load(cfg, cache, train_bbox).items() if k != "provinces"}
+    country = boundaries.get("country")
+    clip_to_country = country is not None and cfg["study_area"].get("clip_to_country", True)
+    where = f" in {country['NAME'].iloc[0]}" if clip_to_country else ""
     thr_key = "max_tss (max sensitivity + specificity)"
     thr = thresholds[thr_key]
-    current = modeling.predict_grid(model, layers, variables)
+    name = cfg["species"]["name"]
+    current_full = modeling.predict_grid(model, layers, variables)
+    if train_bbox != bbox:
+        # range-wide map from the training extent, then everything below is for the study area only
+        env.write_raster(out / "rasters" / "suitability_training_range.tif", current_full, template)
+        plots.suitability_map(out / "figures" / "suitability_range.png", current_full, template, pres,
+                              f"{name} – habitat suitability, training range (current)", range_boundaries)
+    train_template = template
+    win, template = env.subgrid(train_template, bbox)
+    if clip_to_country:
+        inside = bnd.country_mask(template, country)  # results are reported for the country only
+        clip = lambda a: np.where(inside, a, np.nan)  # noqa: E731
+    else:
+        clip = lambda a: a  # noqa: E731
+    current = clip(current_full[win])
+    area = cell_area_km2(template)
+    in_bbox = pres["lon"].between(bbox[0], bbox[2]) & pres["lat"].between(bbox[1], bbox[3])
+    if clip_to_country:
+        import geopandas as gpd
+        pts = gpd.GeoSeries(gpd.points_from_xy(pres["lon"], pres["lat"]), crs="EPSG:4326")
+        in_bbox &= pts.within(country.geometry.union_all()).to_numpy()
+    pres_map = pres[in_bbox]
     binary = np.where(np.isnan(current), np.nan, (current >= thr).astype("float32"))
     suitable_km2 = float(np.nansum(area * (binary == 1)))
     env.write_raster(out / "rasters" / "suitability_current.tif", current, template)
@@ -174,36 +221,80 @@ def main(argv=None):
     p10 = thresholds["10th_percentile_training_presence"]
     env.write_raster(out / "rasters" / "binary_current_p10.tif",
                      np.where(np.isnan(current), np.nan, (current >= p10).astype("float32")), template)
-    name = cfg["species"]["name"]
-    plots.occurrence_map(out / "figures" / "occurrences.png", cleaned, pres, template, layers[all_vars[0]], bg)
-    plots.suitability_map(out / "figures" / "suitability_current.png", current, template, pres,
-                          f"{name} – habitat suitability (current)", boundaries)
-    plots.binary_map(out / "figures" / "binary_current.png", binary, template, pres,
-                     f"{name} – suitable habitat (max-TSS threshold)", thr, boundaries)
+    plots.occurrence_map(out / "figures" / "occurrences.png", cleaned, pres, train_template,
+                         layers[all_vars[0]], bg, range_boundaries)
+    plots.suitability_map(out / "figures" / "suitability_current.png", current, template, pres_map,
+                          f"{name} – habitat suitability{where} (current)", boundaries)
+    plots.binary_map(out / "figures" / "binary_current.png", binary, template, pres_map,
+                     f"{name} – suitable habitat{where} (max-TSS threshold)", thr, boundaries)
     log.info("    suitable area: %.0f km²", suitable_km2)
 
-    future = None
-    if cfg.get("future", {}).get("enabled"):
-        f = cfg["future"]
-        label = f"{f['gcm']} SSP{f['ssp']} {f['period']}"
-        log.info("    future projection: %s", label)
-        fut_layers = env.load_future_layers(cfg, cache, template, variables)
-        fut = modeling.predict_grid(model, fut_layers, variables)
+    future = []
+
+    def save_projection(label, tag, fut, mess, info, agreement=None, n_models=None):
+        """Write rasters/figures for one projection and record its summary row."""
+        fut, mess = clip(fut), clip(mess)
+        agreement = None if agreement is None else clip(agreement)
         fut_bin = np.where(np.isnan(fut), np.nan, (fut >= thr).astype("float32"))
-        mess = modeling.mess(x_bg, fut_layers, variables)
-        env.write_raster(out / "rasters" / "suitability_future.tif", fut, template)
-        env.write_raster(out / "rasters" / "binary_future_maxTSS.tif", fut_bin, template)
-        env.write_raster(out / "rasters" / "mess_future.tif", mess, template)
-        plots.suitability_map(out / "figures" / "suitability_future.png", fut, template, None,
-                              f"{name} – suitability {label}", boundaries)
-        plots.change_map(out / "figures" / "suitability_change.png", fut - current, template,
-                         f"Change in suitability, {label}")
-        plots.change_map(out / "figures" / "mess_future.png", np.clip(mess, -100, 100), template,
-                         "MESS (negative = novel climate / extrapolation)")
+        env.write_raster(out / "rasters" / f"suitability_{tag}.tif", fut, template)
+        env.write_raster(out / "rasters" / f"binary_maxTSS_{tag}.tif", fut_bin, template)
+        env.write_raster(out / "rasters" / f"mess_{tag}.tif", mess, template)
+        plots.suitability_map(out / "figures" / f"suitability_{tag}.png", fut, template, None,
+                              f"{name} – suitability{where}, {label}", boundaries)
+        plots.change_map(out / "figures" / f"change_{tag}.png", fut - current, template,
+                         f"Change in suitability{where}, {label}", boundaries=boundaries)
+        plots.change_map(out / "figures" / f"mess_{tag}.png", np.clip(mess, -100, 100), template,
+                         f"MESS{where}, {label} (negative = novel climate)", label="MESS similarity",
+                         boundaries=boundaries)
+        figures = ["suitability", "change", "mess"]
+        if agreement is not None:
+            env.write_raster(out / "rasters" / f"agreement_{tag}.tif", agreement, template)
+            plots.agreement_map(out / "figures" / f"agreement_{tag}.png", agreement, n_models, template, pres_map,
+                                f"Model agreement{where}, SSP{info['ssp']} {info['period']}", boundaries)
+            figures.append("agreement")
         fut_km2 = float(np.nansum(area * (fut_bin == 1)))
-        future = {"label": label, "suitable_area_km2": fut_km2,
-                  "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan")}
-        log.info("    future suitable area: %.0f km² (%+.1f%%)", fut_km2, future["area_change_pct"])
+        valid = ~np.isnan(mess)
+        future.append({
+            "label": label, "tag": tag, "figures": figures, **info, "suitable_area_km2": fut_km2,
+            "area_change_pct": 100 * (fut_km2 - suitable_km2) / suitable_km2 if suitable_km2 else float("nan"),
+            "novel_climate_pct": float(100 * np.mean(mess[valid] < 0)) if valid.any() else float("nan"),
+        })
+        log.info("    suitable area: %.0f km² (%+.1f%%), novel climate on %.1f%% of cells",
+                 fut_km2, future[-1]["area_change_pct"], future[-1]["novel_climate_pct"])
+
+    if cfg.get("future", {}).get("enabled"):
+        by_ssp_period: dict[tuple, list] = {}
+        for sc in env.future_scenarios(cfg["future"]):
+            label = f"{sc['gcm']} SSP{sc['ssp']} {sc['period']}"
+            log.info("    future projection: %s", label)
+            fut_layers = env.load_future_layers(cfg, cache, template,
+                                                [v for v in variables if v.startswith("bio_")], sc)
+            # non-climate layers (rivers, land cover) are held at their current values
+            fut_layers.update({v: layers[v][win] for v in variables if not v.startswith("bio_")})
+            fut = modeling.predict_grid(model, fut_layers, variables)
+            mess = modeling.mess(x_bg, fut_layers, variables)
+            save_projection(label, f"{sc['gcm']}_ssp{sc['ssp']}_{sc['period']}", fut, mess, sc)
+            by_ssp_period.setdefault((sc["ssp"], sc["period"]), []).append((fut, mess))
+
+        # Ensemble mean across climate models: mean suitability, most pessimistic (minimum) MESS,
+        # and the number of models that predict suitable habitat in each cell.
+        if cfg["future"].get("ensemble", True):
+            for (ssp, period), runs in by_ssp_period.items():
+                if len(runs) < 2:
+                    continue
+                label = f"Ensemble mean SSP{ssp} {period}"
+                log.info("    future projection: %s", label)
+                futs = np.stack([r[0] for r in runs])
+                messes = np.stack([r[1] for r in runs])
+                any_nan = np.isnan(futs).any(axis=0)
+                ens = np.where(any_nan, np.nan, futs.mean(axis=0))
+                ens_mess = np.where(np.isnan(messes).any(axis=0), np.nan, messes.min(axis=0))
+                agreement = np.where(any_nan, np.nan, (futs >= thr).sum(axis=0).astype("float32"))
+                save_projection(label, f"ensemble_ssp{ssp}_{period}", ens, ens_mess,
+                                {"gcm": "ensemble mean", "ssp": ssp, "period": period},
+                                agreement=agreement, n_models=len(runs))
+
+        pd.DataFrame(future).drop(columns=["tag", "figures"]).to_csv(out / "tables" / "future_scenarios.csv", index=False)
 
     # 8. Report ---------------------------------------------------------------------------
     log.info("STEP 8/8  Report")
@@ -219,7 +310,8 @@ def main(argv=None):
         "cfg": cfg, "best": best, "metrics": metrics, "thresholds": thresholds, "n_presences": len(pres),
         "n_background": len(bg), "cleaning_steps": steps, "variables": variables, "removed": removed,
         "tuning": tuning, "importance": importance, "suitable_area_km2": suitable_km2, "future": future,
-        "occ_source": occ_source,
+        "occ_source": occ_source, "train_bbox": train_bbox,
+        "country_name": country["NAME"].iloc[0] if clip_to_country else None,
     })
     log.info("Done. Report: %s", path)
     return summary

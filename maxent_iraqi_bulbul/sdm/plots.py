@@ -39,6 +39,28 @@ def _map_axes(ax):
     ax.set_aspect("equal")
 
 
+def _draw_boundaries(ax, boundaries, template=None):
+    """Neighbouring countries (thin), provinces (fine), the focal country (bold), keeping the map extent."""
+    if not boundaries:
+        return
+    if not isinstance(boundaries, dict):  # a plain GeoDataFrame
+        boundaries = {"custom": boundaries}
+    style = {
+        "countries": dict(color=INK_2, linewidth=0.5),
+        "provinces": dict(color=INK_2, linewidth=0.35, linestyle=(0, (3, 2))),
+        "custom": dict(color=INK_2, linewidth=0.6),
+        "country": dict(color=INK, linewidth=1.3),
+    }
+    for key in ("countries", "provinces", "custom", "country"):
+        gdf = boundaries.get(key)
+        if gdf is not None and not gdf.empty:
+            gdf.boundary.plot(ax=ax, zorder=4, **style[key])
+    if template is not None:
+        e = _extent(template)
+        ax.set_xlim(e[0], e[1])
+        ax.set_ylim(e[2], e[3])
+
+
 def _points(ax, pres, label="Occurrences"):
     ax.scatter(pres["lon"], pres["lat"], s=14, c=ORANGE, edgecolors="white", linewidths=0.7,
                label=label, zorder=3)
@@ -47,8 +69,7 @@ def _points(ax, pres, label="Occurrences"):
 def suitability_map(path, grid, template, pres, title, boundaries=None):
     fig, ax = plt.subplots(figsize=(8, 6.5))
     im = ax.imshow(grid, extent=_extent(template), cmap=SUITABILITY, vmin=0, vmax=1, interpolation="nearest")
-    if boundaries is not None:
-        boundaries.boundary.plot(ax=ax, color=INK_2, linewidth=0.6)
+    _draw_boundaries(ax, boundaries, template)
     if pres is not None:
         _points(ax, pres)
         ax.legend(loc="lower left", frameon=True)
@@ -64,8 +85,7 @@ def binary_map(path, binary, template, pres, title, threshold, boundaries=None):
     fig, ax = plt.subplots(figsize=(8, 6.5))
     cmap = ListedColormap(["#e9e8e4", "#1f6b35"])
     ax.imshow(binary, extent=_extent(template), cmap=cmap, vmin=0, vmax=1, interpolation="nearest")
-    if boundaries is not None:
-        boundaries.boundary.plot(ax=ax, color=INK_2, linewidth=0.6)
+    _draw_boundaries(ax, boundaries, template)
     _points(ax, pres)
     handles = [plt.Rectangle((0, 0), 1, 1, color="#1f6b35", label=f"Suitable (≥ {threshold:.3f})"),
                plt.Rectangle((0, 0), 1, 1, color="#e9e8e4", label="Unsuitable"),
@@ -78,11 +98,12 @@ def binary_map(path, binary, template, pres, title, threshold, boundaries=None):
     plt.close(fig)
 
 
-def change_map(path, change, template, title):
+def change_map(path, change, template, title, label="Change in suitability (future − current)", boundaries=None):
     fig, ax = plt.subplots(figsize=(8, 6.5))
     lim = np.nanmax(np.abs(change)) or 1
     im = ax.imshow(change, extent=_extent(template), cmap=DIVERGING, vmin=-lim, vmax=lim, interpolation="nearest")
-    fig.colorbar(im, ax=ax, shrink=0.8, label="Change in suitability (future − current)")
+    fig.colorbar(im, ax=ax, shrink=0.8, label=label)
+    _draw_boundaries(ax, boundaries, template)
     ax.set_title(title)
     _map_axes(ax)
     fig.tight_layout()
@@ -90,7 +111,27 @@ def change_map(path, change, template, title):
     plt.close(fig)
 
 
-def occurrence_map(path, raw, thinned, template, background_layer, bg):
+def agreement_map(path, agreement, n_models, template, pres, title, boundaries=None):
+    """Number of climate models (0..n) predicting suitable habitat in each cell."""
+    fig, ax = plt.subplots(figsize=(8, 6.5))
+    colors = SUITABILITY(np.linspace(0.0, 0.85, n_models + 1))
+    colors[0] = matplotlib.colors.to_rgba("#e9e8e4")
+    cmap = ListedColormap(colors)
+    im = ax.imshow(agreement, extent=_extent(template), cmap=cmap, vmin=-0.5, vmax=n_models + 0.5,
+                   interpolation="nearest")
+    _points(ax, pres)
+    ax.legend(loc="lower left", frameon=True)
+    cb = fig.colorbar(im, ax=ax, shrink=0.8, ticks=range(n_models + 1))
+    cb.set_label(f"Models predicting suitable (of {n_models})")
+    _draw_boundaries(ax, boundaries, template)
+    ax.set_title(title)
+    _map_axes(ax)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def occurrence_map(path, raw, thinned, template, background_layer, bg, boundaries=None):
     fig, ax = plt.subplots(figsize=(8, 6.5))
     ax.imshow(np.where(np.isnan(background_layer), np.nan, 1), extent=_extent(template),
               cmap=ListedColormap(["#e9e8e4"]), interpolation="nearest")
@@ -98,6 +139,7 @@ def occurrence_map(path, raw, thinned, template, background_layer, bg):
     ax.scatter(raw["lon"], raw["lat"], s=10, facecolors="none", edgecolors=BLUE, linewidths=0.8,
                label=f"Cleaned records ({len(raw):,})", zorder=3)
     _points(ax, thinned, label=f"Thinned, used in model ({len(thinned):,})")
+    _draw_boundaries(ax, boundaries, template)
     ax.legend(loc="lower left", frameon=True, markerscale=1.5)
     ax.set_title("Occurrence and background points")
     _map_axes(ax)

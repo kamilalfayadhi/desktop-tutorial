@@ -36,6 +36,13 @@ METRIC_LABELS = {
     "cv_omission_rate_10pct": "Omission rate at 10th percentile (CV)",
 }
 
+SELECTION_RULES = {
+    "test_auc": "The model with the highest mean test AUC was selected.",
+    "auc_diff": "The model with the least overfitting (smallest train − test AUC difference) was selected.",
+    "auc_then_or10": ("Among models within {tol} of the best mean test AUC, the one with the lowest 10th-percentile "
+                      "omission rate (then the strongest regularization) was selected."),
+}
+
 
 def _img(path: Path) -> str:
     data = base64.b64encode(path.read_bytes()).decode()
@@ -84,15 +91,36 @@ def build(out: Path, ctx: dict) -> Path:
     metrics_table = pd.DataFrame([(METRIC_LABELS.get(k, k), float(v)) for k, v in m.items()], columns=["Metric", "Value"])
     thresholds = pd.DataFrame(list(ctx["thresholds"].items()), columns=["Threshold rule", "Cloglog value"])
 
+    mapped = (html.escape(ctx["country_name"]) + " (clipped to the national border)" if ctx.get("country_name")
+              else f"the area {cfg['study_area']['bbox']}")
+    range_html = ""
+    if (fig / "suitability_range.png").exists() and list(ctx["train_bbox"]) != list(cfg["study_area"]["bbox"]):
+        range_html = f"""<p>The model was trained across the species' range ({ctx['train_bbox']}) so that it learns the
+full climatic niche, including conditions hotter or drier than in the mapped area. The range-wide prediction is shown
+first; all maps, areas and future projections below are for {mapped}.</p>
+{_img(fig / 'suitability_range.png')}"""
+
     future_html = ""
     if ctx.get("future"):
-        f = ctx["future"]
+        fut = ctx["future"]
+        table = pd.DataFrame({
+            "Scenario": [f["label"] for f in fut],
+            "Suitable area (km²)": [round(f["suitable_area_km2"]) for f in fut],
+            "Change vs current (%)": [f["area_change_pct"] for f in fut],
+            "Novel climate, MESS < 0 (% of cells)": [f["novel_climate_pct"] for f in fut],
+        })
+        sections = "".join(
+            f"<h3>{html.escape(f['label'])}</h3>"
+            + "".join(_img(fig / f"{kind}_{f['tag']}.png") for kind in f["figures"])
+            for f in fut)
         future_html = f"""
-<h2>7. Future projection – {html.escape(f['label'])}</h2>
-<p>Suitable area changes from <b>{ctx['suitable_area_km2']:,.0f} km²</b> today to
-<b>{f['suitable_area_km2']:,.0f} km²</b> ({f['area_change_pct']:+.1f}%) at the max-TSS threshold.
-Areas with negative MESS are outside the range of current training conditions; predictions there are extrapolations.</p>
-{_img(fig / 'suitability_future.png')}{_img(fig / 'suitability_change.png')}{_img(fig / 'mess_future.png')}"""
+<h2>7. Future projections</h2>
+<p>Current suitable area: <b>{ctx['suitable_area_km2']:,.0f} km²</b> (max-TSS threshold, applied unchanged to every scenario).
+Areas with negative MESS have climates outside the range of current training conditions; predictions there are extrapolations.
+Ensemble rows average the suitability of all climate models for the same SSP and period, use the lowest MESS of the models,
+and include a map of how many models predict suitable habitat in each cell.</p>
+{_table(table, floatfmt="{:+.1f}")}
+{sections}"""
 
     src = cfg["environment"]
     env_desc = (f"WorldClim v2.1 bioclimatic variables (1970–2000), {src['resolution']} resolution"
@@ -103,13 +131,13 @@ Areas with negative MESS are outside the range of current training conditions; p
 <title>MaxEnt – {html.escape(cfg['species']['name'])}</title><style>{CSS}</style></head><body>
 <h1>Habitat suitability model – <i>{html.escape(cfg['species']['name'])}</i></h1>
 <p class="sub">MaxEnt species distribution model · generated {datetime.now():%Y-%m-%d %H:%M} ·
-study area {cfg['study_area']['bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
+mapped area: {mapped} · training area {ctx['train_bbox']} · occurrences: {html.escape(ctx['occ_source'])}</p>
 <div class="tiles">{tiles_html}</div>
 
 <h2>1. Occurrence data</h2>
 {_table(cleaning)}
 <p class="note">Records were cleaned (invalid/zero coordinates, outside study area, old or imprecise records,
-duplicates) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduce sampling bias.
+duplicates{(", records in " + html.escape(", ".join(cfg["occurrences"]["exclude_provinces"]))) if cfg["occurrences"].get("exclude_provinces") else ""}) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduce sampling bias.
 {ctx['n_background']:,} background points were sampled
 {"within " + str(cfg['background']['buffer_km']) + " km of presences" if cfg['background']['buffer_km'] else "across the study area"}.</p>
 {_img(fig / 'occurrences.png')}
@@ -123,6 +151,7 @@ duplicates) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduc
 <h2>3. Model tuning</h2>
 <p>{len(ctx['tuning'])} candidate models (feature classes × regularization multipliers) were evaluated with
 {"4-fold spatial block" if cfg['model']['cv_method'] == 'block' else "5-fold random"} cross-validation.
+{SELECTION_RULES.get(cfg['model'].get('selection_metric', 'test_auc'), '').format(tol=cfg['model'].get('auc_tolerance', 0.005))}
 Selected: <b>features = {html.escape(best['features'])}, RM = {best['rm']}</b>
 (test AUC {best['test_auc']:.3f} ± {best['test_auc_sd']:.3f}, AUC diff {best['auc_diff']:.3f}, OR10 {best['or10']:.3f}).</p>
 {_table(tuning)}
@@ -141,6 +170,7 @@ honest measure of transferability. Boyce index ranges −1 to 1; positive values
 {_img(fig / 'response_curves.png')}
 
 <h2>6. Habitat suitability – current climate</h2>
+{range_html}
 {_img(fig / 'suitability_current.png')}
 {_img(fig / 'binary_current.png')}
 {future_html}
@@ -149,6 +179,10 @@ honest measure of transferability. Boyce index ranges −1 to 1; positive values
 <p class="note">GeoTIFFs for GIS are in <code>rasters/</code>; tables (cleaned occurrences, background, tuning results,
 importance, response curves, metrics) in <code>tables/</code>; the fitted model in <code>model/</code>.</p>
 <h2>Citation / caveats</h2>
+<p class="note">Country and governorate boundaries: Natural Earth 1:10m Admin 0 and Admin 1 (public domain).</p>
+<p class="note">Non-climate layers, when used: ESA WorldCover 2021 v200 (Zanaga et al. 2022), land-cover fractions per cell;
+Natural Earth 1:10m river centre-lines, which include the Tigris, Euphrates and Shatt al-Arab but not smaller rivers such as
+the Great and Little Zab, Diyala or Karun. Both are held at present-day values in future projections.</p>
 <p class="note">Fick &amp; Hijmans (2017) WorldClim 2. Phillips et al. (2006, 2017) MaxEnt; model fitted with the
 <code>elapid</code> Python implementation (Anderson 2023). If occurrences came from GBIF, cite the GBIF records used
 (create a download DOI at gbif.org for publication). Presence-background models estimate relative suitability,

@@ -8,6 +8,7 @@ on:
     paths:
       - "maxent_iraqi_bulbul/**"
       - "!maxent_iraqi_bulbul/outputs/**"
+      - "!maxent_iraqi_bulbul/article/**"
       - ".github/workflows/maxent.yml"
 
 permissions:
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     defaults:
       run:
         working-directory: maxent_iraqi_bulbul
@@ -61,5 +62,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f outputs
           git commit -m "MaxEnt results from workflow run ${{ github.run_number }} [skip ci]" || echo "No changes"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
+          # merge (not rebase) any newer commits; on conflicting output files keep this run's results
+          git pull --no-rebase --no-edit -X ours origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

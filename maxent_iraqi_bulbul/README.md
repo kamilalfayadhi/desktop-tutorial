@@ -34,13 +34,20 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 | Setting | Default | Meaning |
 |---|---|---|
 | `species.name` | *Pycnonotus leucotis* | Name used for GBIF and in titles |
-| `occurrences.thin_km` | 5 | Minimum distance between kept records (reduces sampling bias) |
-| `study_area.bbox` | Iraq + ~1° margin | Model extent. Widen it to cover the whole range of the species |
+| `occurrences.thin_km` | 10 | Minimum distance between kept records (reduces sampling bias) |
+| `occurrences.exclude_provinces` | Dihok, Arbil, As-Sulaymaniyah, Ninawa, At-Ta'mim | Remove all records inside these governorates (northern Iraq); `[]` keeps every record |
+| `study_area.bbox` | Iraq + ~1° margin | Area mapped and reported (maps, suitable area, future projections) |
+| `study_area.country` | IRQ | Country whose border and governorates are drawn on every map; with `clip_to_country: true` all maps, rasters and areas cover only this country |
+| `study_area.training_bbox` | 34–64°E, 20–40°N | Area the model is trained on: the western range (Turkey/Levant to Iran, the Gulf and western Pakistan), which includes climates hotter than Iraq; `[34, 20, 78, 40]` adds the Indian subcontinent |
+| `occurrences.gbif_supplement` | true | Add GBIF records from the training area to your file (duplicates removed) |
 | `environment.resolution` | 2.5m (~4.5 km) | WorldClim resolution: 10m, 5m, 2.5m, 30s |
 | `environment.keep_variables` | bio_1, bio_12 | Never removed by the collinearity filter |
+| `environment.extra_layers` | rivers + tree/cropland/built | Non-climate predictors: distance to major rivers (Natural Earth, capped at `river_distance_cap_km` = 50 km) and land-cover fractions (ESA WorldCover 2021), held constant in future projections |
 | `background.buffer_km` | 300 | Background sampled within this distance of records (accessible area) |
 | `model.feature_classes` / `regularization_multipliers` | 5 × 6 grid | Candidate models compared by cross-validation |
-| `future.enabled` | false | Also project to a CMIP6 scenario (GCM, SSP, period) |
+| `model.selection_metric` | auc_then_or10 | Among settings within 0.005 of the best CV AUC, pick the lowest omission rate, then the strongest regularization |
+| `future.enabled` | true | Project to every combination of `gcms` × `ssps` × `periods` (default: MPI-ESM1-2-HR and UKESM1-0-LL, SSP2-4.5 and SSP5-8.5, 2041–2060 and 2061–2080) |
+| `future.ensemble` | true | Also average the climate models for each SSP × period (mean suitability, lowest MESS, and a model-agreement map) |
 
 ## Outputs (`outputs/`)
 
@@ -65,7 +72,8 @@ checks that the predicted map matches the true one (Spearman ρ > 0.7; the curre
 * MaxEnt is fitted with [`elapid`](https://github.com/earth-chris/elapid), a Python implementation of Maxent
   (same features: linear, quadratic, hinge, product, threshold; cloglog output).
 * Cross-validation uses ENMeval-style "block" partitioning: 4 spatial blocks with equal numbers of records.
-  The best settings are chosen by mean test AUC, then refit on all data.
+  Among settings within 0.005 of the best mean test AUC, the one with the lowest 10th-percentile omission
+  rate is chosen (ties go to stronger regularization), then refit on all data.
 * Clean your own records carefully. Captive or escaped birds, wrong coordinates and strong observer bias around
   cities all affect the result.
 * Cite: Phillips et al. 2006/2017 (MaxEnt), Fick & Hijmans 2017 (WorldClim 2), and GBIF (create a download DOI for publication).
