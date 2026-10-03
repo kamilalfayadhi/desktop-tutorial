@@ -19,6 +19,10 @@ occurrences:
   min_year: 1970               # drop older records (climate baseline is 1970-2000); null = keep all
   max_coord_uncertainty_m: 10000  # drop records less precise than this (if column exists); null = keep all
   thin_km: 10                  # spatial thinning distance (km) to reduce sampling bias; 0 = only 1 per raster cell
+  # Records inside these provinces of study_area.country are removed (from your file and from GBIF).
+  # Names as in Natural Earth admin-1. Default: northern Iraq = Kurdistan Region (Dihok, Arbil,
+  # As-Sulaymaniyah) + Ninawa (Nineveh) + At-Ta'mim (Kirkuk). [] = keep all records.
+  exclude_provinces: ["Dihok", "Arbil", "As-Sulaymaniyah", "Ninawa", "At-Ta'mim"]
 
 study_area:
   # Area MAPPED, [min_lon, min_lat, max_lon, max_lat]. Default: Iraq plus a ~1 degree margin.

@@ -98,6 +98,15 @@ def main(argv=None):
         for src, n in raw["source"].value_counts(sort=False).items())
     cleaned, steps = occurrences.clean(raw, train_bbox, occ_cfg.get("min_year"),
                                        occ_cfg.get("max_coord_uncertainty_m"))
+    excluded = occ_cfg.get("exclude_provinces") or []
+    if excluded:
+        import geopandas as gpd
+        area_out = bnd.provinces(cache, cfg["study_area"].get("country") or "IRQ", excluded).union_all()
+        pts = gpd.GeoSeries(gpd.points_from_xy(cleaned["lon"], cleaned["lat"]), crs="EPSG:4326")
+        drop = pts.within(area_out).to_numpy()
+        log.info("Removing %d records inside the excluded provinces: %s", int(drop.sum()), ", ".join(excluded))
+        cleaned = cleaned[~drop].reset_index(drop=True)
+        steps["outside_excluded_provinces"] = len(cleaned)
 
     # 2. Environment ----------------------------------------------------------------------
     log.info("STEP 2/8  Environmental layers")

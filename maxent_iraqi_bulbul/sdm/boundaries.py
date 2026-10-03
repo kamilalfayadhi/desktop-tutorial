@@ -56,3 +56,13 @@ def country_mask(template: dict, country: gpd.GeoDataFrame) -> np.ndarray:
     """True for grid cells whose centre lies inside the country."""
     return rasterize(((g, 1) for g in country.geometry), out_shape=(template["height"], template["width"]),
                      transform=template["transform"], dtype="uint8").astype(bool)
+
+
+def provinces(cache_dir: Path, country_iso: str, names: list[str]) -> gpd.GeoDataFrame:
+    """Natural Earth admin-1 polygons for the named provinces of a country (names as in Natural Earth)."""
+    prov = _natural_earth("ne_10m_admin_1_states_provinces", cache_dir).to_crs("EPSG:4326")
+    prov = prov[prov["adm0_a3"] == country_iso.upper()]
+    missing = sorted(set(names) - set(prov["name"]))
+    if missing:
+        raise ValueError(f"Unknown province name(s) {missing}; available: {sorted(prov['name'])}")
+    return prov[prov["name"].isin(names)]

@@ -35,6 +35,7 @@ that touches this folder (or manually from the *Actions* tab → *Run workflow*)
 |---|---|---|
 | `species.name` | *Pycnonotus leucotis* | Name used for GBIF and in titles |
 | `occurrences.thin_km` | 10 | Minimum distance between kept records (reduces sampling bias) |
+| `occurrences.exclude_provinces` | Dihok, Arbil, As-Sulaymaniyah, Ninawa, At-Ta'mim | Remove all records inside these governorates (northern Iraq); `[]` keeps every record |
 | `study_area.bbox` | Iraq + ~1° margin | Area mapped and reported (maps, suitable area, future projections) |
 | `study_area.country` | IRQ | Country whose border and governorates are drawn on every map; with `clip_to_country: true` all maps, rasters and areas cover only this country |
 | `study_area.training_bbox` | 34–64°E, 20–40°N | Area the model is trained on: the western range (Turkey/Levant to Iran, the Gulf and western Pakistan), which includes climates hotter than Iraq; `[34, 20, 78, 40]` adds the Indian subcontinent |

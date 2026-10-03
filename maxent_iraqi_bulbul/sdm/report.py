@@ -137,7 +137,7 @@ mapped area: {mapped} · training area {ctx['train_bbox']} · occurrences: {html
 <h2>1. Occurrence data</h2>
 {_table(cleaning)}
 <p class="note">Records were cleaned (invalid/zero coordinates, outside study area, old or imprecise records,
-duplicates) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduce sampling bias.
+duplicates{(", records in " + html.escape(", ".join(cfg["occurrences"]["exclude_provinces"]))) if cfg["occurrences"].get("exclude_provinces") else ""}) and spatially thinned to {cfg['occurrences']['thin_km']} km to reduce sampling bias.
 {ctx['n_background']:,} background points were sampled
 {"within " + str(cfg['background']['buffer_km']) + " km of presences" if cfg['background']['buffer_km'] else "across the study area"}.</p>
 {_img(fig / 'occurrences.png')}
